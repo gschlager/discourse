@@ -8,7 +8,7 @@ module ImportScripts::PhpBB3
         SELECT COUNT(*) AS count
         FROM #{@table_prefix}_users u
           JOIN #{@table_prefix}_groups g ON g.group_id = u.group_id
-        WHERE u.user_type != #{Constants::USER_TYPE_IGNORE}
+        WHERE u.user_type <> #{Constants::USER_TYPE_IGNORE}
       SQL
     end
 
@@ -21,9 +21,9 @@ module ImportScripts::PhpBB3
           JOIN #{@table_prefix}_groups g ON (g.group_id = u.group_id)
           LEFT OUTER JOIN #{@table_prefix}_banlist b ON (
             u.user_id = b.ban_userid AND b.ban_exclude = 0 AND
-            (b.ban_end = 0 OR b.ban_end >= UNIX_TIMESTAMP())
+            (b.ban_end = 0 OR b.ban_end >= #{unix_timestamp})
           )
-        WHERE u.user_type != #{Constants::USER_TYPE_IGNORE}
+        WHERE u.user_type <> #{Constants::USER_TYPE_IGNORE}
         ORDER BY u.user_id ASC
         LIMIT #{@batch_size}
         OFFSET #{offset}
@@ -59,7 +59,7 @@ module ImportScripts::PhpBB3
             FROM #{@table_prefix}_topics
             GROUP BY forum_id
           ) x ON (f.forum_id = x.forum_id)
-        WHERE f.forum_type != #{Constants::FORUM_TYPE_LINK}
+        WHERE f.forum_type <> #{Constants::FORUM_TYPE_LINK}
         ORDER BY f.parent_id ASC, f.left_id ASC
       SQL
     end
@@ -130,7 +130,7 @@ module ImportScripts::PhpBB3
 
     def get_max_attachment_size
       query(<<-SQL).first[:filesize]
-        SELECT IFNULL(MAX(filesize), 0) AS filesize
+        SELECT COALESCE(MAX(filesize), 0) AS filesize
         FROM #{@table_prefix}_attachments
       SQL
     end
@@ -162,7 +162,7 @@ module ImportScripts::PhpBB3
       if use_fixed_messages
         query(<<-SQL)
           SELECT m.msg_id, i.root_msg_id, m.author_id, m.message_time, m.message_subject, m.message_text,
-            IFNULL(a.attachment_count, 0) AS attachment_count
+            COALESCE(a.attachment_count, 0) AS attachment_count
           FROM #{@table_prefix}_privmsgs m
             JOIN #{@table_prefix}_import_privmsgs i ON (m.msg_id = i.msg_id)
             LEFT OUTER JOIN (
@@ -178,7 +178,7 @@ module ImportScripts::PhpBB3
       else
         query(<<-SQL)
           SELECT m.msg_id, m.root_level AS root_msg_id, m.author_id, m.message_time, m.message_subject,
-            m.message_text, IFNULL(a.attachment_count, 0) AS attachment_count
+            m.message_text, COALESCE(a.attachment_count, 0) AS attachment_count
           FROM #{@table_prefix}_privmsgs m
             LEFT OUTER JOIN (
               SELECT post_msg_id, COUNT(*) AS attachment_count
@@ -217,6 +217,7 @@ module ImportScripts::PhpBB3
 
       drop_import_message_table
       create_import_message_table
+      create_import_message_table_index
       fill_import_message_table
 
       drop_temp_import_message_table
@@ -261,9 +262,9 @@ module ImportScripts::PhpBB3
     def create_temp_import_message_table
       query(<<-SQL)
         CREATE TABLE #{@table_prefix}_import_privmsgs_temp (
-          msg_id MEDIUMINT(8) NOT NULL,
-          root_msg_id MEDIUMINT(8) NOT NULL,
-          recipient_id MEDIUMINT(8),
+          msg_id INTEGER NOT NULL,
+          root_msg_id INTEGER NOT NULL,
+          recipient_id INTEGER,
           normalized_subject VARCHAR(255) NOT NULL,
           PRIMARY KEY (msg_id)
         )
@@ -276,8 +277,8 @@ module ImportScripts::PhpBB3
       query(<<-SQL)
         INSERT INTO #{@table_prefix}_import_privmsgs_temp (msg_id, root_msg_id, recipient_id, normalized_subject)
         SELECT m.msg_id, m.root_level,
-          CASE WHEN m.root_level = 0 AND INSTR(m.to_address, ':') = 0 THEN
-            CAST(SUBSTRING(m.to_address, 3) AS SIGNED INTEGER)
+          CASE WHEN m.root_level = 0 AND #{position('m.to_address', ':')} = 0 THEN
+            #{cast_integer(substring('m.to_address', 3))}
           ELSE NULL END AS recipient_id,
           LOWER(CASE WHEN m.message_subject LIKE 'Re: %' THEN
             SUBSTRING(m.message_subject, 5)
@@ -299,12 +300,15 @@ module ImportScripts::PhpBB3
     def create_import_message_table
       query(<<-SQL)
         CREATE TABLE #{@table_prefix}_import_privmsgs (
-          msg_id MEDIUMINT(8) NOT NULL,
-          root_msg_id MEDIUMINT(8) NOT NULL,
-          PRIMARY KEY (msg_id),
-          INDEX #{@table_prefix}_import_privmsgs_root_msg_id (root_msg_id)
+          msg_id INTEGER NOT NULL,
+          root_msg_id INTEGER NOT NULL,
+          PRIMARY KEY (msg_id)
         )
       SQL
+    end
+
+    def create_import_message_table_index
+      query("CREATE INDEX #{@table_prefix}_import_privmsgs_root_msg_id ON #{@table_prefix}_import_privmsgs (root_msg_id)")
     end
 
     # this tries to calculate the actual root_level (= msg_id of the first message in a
