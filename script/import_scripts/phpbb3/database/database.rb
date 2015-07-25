@@ -1,4 +1,5 @@
-require 'mysql2'
+require 'sequel'
+require_relative 'database_version_detector'
 
 module ImportScripts::PhpBB3
   class Database
@@ -10,7 +11,9 @@ module ImportScripts::PhpBB3
     # @param database_settings [ImportScripts::PhpBB3::DatabaseSettings]
     def initialize(database_settings)
       @database_settings = database_settings
-      @database_client = create_database_client
+      @database = create_database_client
+
+      change_database_client_settings
     end
 
     # @return [ImportScripts::PhpBB3::Database_3_0 | ImportScripts::PhpBB3::Database_3_1]
@@ -19,10 +22,10 @@ module ImportScripts::PhpBB3
 
       if version.start_with?('3.0')
         require_relative 'database_3_0'
-        Database_3_0.new(@database_client, @database_settings)
+        Database_3_0.new(@database, @database_settings)
       elsif version.start_with?('3.1')
         require_relative 'database_3_1'
-        Database_3_1.new(@database_client, @database_settings)
+        Database_3_1.new(@database, @database_settings)
       else
         raise UnsupportedVersionError, "Unsupported version (#{version}) of phpBB detected.\n" \
           << 'Currently only 3.0.x and 3.1.x are supported by this importer.'
@@ -32,22 +35,43 @@ module ImportScripts::PhpBB3
     protected
 
     def create_database_client
-      Mysql2::Client.new(
-        host: @database_settings.host,
-        username: @database_settings.username,
-        password: @database_settings.password,
-        database: @database_settings.schema
-      )
+      Sequel.connect(:adapter => database_adapter,
+                     :host => @database_settings.host,
+                     :database => @database_settings.schema,
+                     :user => @database_settings.username,
+                     :password => @database_settings.password)
+    end
+
+    def change_database_client_settings
+      case @database_settings.type.downcase
+        when 'mysql', 'mariadb'
+          @database.convert_tinyint_to_bool = false
+      end
+    end
+
+    def database_adapter
+      case @database_settings.type.downcase
+        when 'mysql', 'mariadb'
+          'mysql2'
+        when 'mssql'
+          'tinytds'
+        when 'oracle'
+          'oracle'
+        when 'postgresql'
+          'postgres'
+        when 'sqlite3'
+          'sqlite'
+        when 'firebird'
+          'firebird'
+        else
+          raise "The database type '#{@database_settings.type}' is not supported."
+      end
     end
 
     def get_phpbb_version
-      table_prefix = @database_settings.table_prefix
-
-      @database_client.query(<<-SQL, cache_rows: false, symbolize_keys: true).first[:config_value]
-        SELECT config_value
-        FROM #{table_prefix}_config
-        WHERE config_name = 'version'
-      SQL
+      DatabaseVersionDetector
+        .new(@database, @database_settings)
+        .get_phpbb_version
     end
   end
 

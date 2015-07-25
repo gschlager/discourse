@@ -15,8 +15,8 @@ module ImportScripts
 
     @settings = Settings.load(ARGV[0])
 
-    # We need to load the gem files for ruby-bbcode-to-md and the database adapter
-    # (e.g. mysql2) before bundler gets initialized by the base importer.
+    # We need to load the gem files for ruby-bbcode-to-md and the Sequel database toolkit
+    # before bundler gets initialized by the base importer.
     # Otherwise we get an error since those gems are not always in the Gemfile.
     require 'ruby-bbcode-to-md' if @settings.use_bbcode_to_md
 

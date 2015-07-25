@@ -1,24 +1,48 @@
 module ImportScripts::PhpBB3
   class DatabaseBase
-    # @param database_client [Mysql2::Client]
     # @param database_settings [ImportScripts::PhpBB3::DatabaseSettings]
-    def initialize(database_client, database_settings)
-      @database_client = database_client
+    def initialize(database, database_settings)
+      @database = database
 
       @batch_size = database_settings.batch_size
       @table_prefix = database_settings.table_prefix
+      @db_type = database_settings.type.downcase
     end
 
     protected
 
-    # Executes a database query.
-    def query(sql)
-      @database_client.query(sql, cache_rows: false, symbolize_keys: true)
+    def table(table_name, table_alias = nil)
+      if table_alias.nil?
+        "#{@table_prefix}_#{table_name}".to_sym
+      else
+        "#{@table_prefix}_#{table_name}___#{table_alias}".to_sym
+      end
     end
 
-    # Executes a database query and returns the value of the 'count' column.
-    def count(sql)
-      query(sql).first[:count]
+    def position(column, substring)
+      case @db_type
+        when 'mysql', 'mariadb', 'oracle', 'sqlite3'
+          Sequel.function(:instr, column, substring)
+        when 'mssql'
+          Sequel.function(:charindex, substring, column)
+        when 'postgresql', 'firebird'
+          Sequel.function(:position, Sequel.lit('? in ?', substring, column))
+        else
+          raise "The database type '#{@db_type}' is not supported."
+      end
+    end
+
+    def substring(column, start_position)
+      case @db_type
+        when 'mysql', 'mariadb', 'postgresql', 'firebird'
+          Sequel.function(:substring, Sequel.lit('? from ?', column, start_position))
+        when 'mssql'
+          Sequel.function(:substring, column, start_position, Sequel.function(:len, column))
+        when 'oracle', 'sqlite3'
+          Sequel.function(:substr, column, start_position)
+        else
+          raise "The database type '#{@db_type}' is not supported."
+      end
     end
   end
 end
