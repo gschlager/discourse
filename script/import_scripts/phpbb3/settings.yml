@@ -48,6 +48,7 @@ import:
   # You should enable this option if you see duplicate messages or lots of related
   # messages as topics with just one post (e.g. 'Importer', 'Re: Importer', 'Re: Importer'
   # should be one topic named 'Importer' and consist of 3 posts).
+  # WARNING: Make sure the database user is allowed to CREATE and DROP tables.
   fix_private_messages: false
 
   # When true: each imported user will have the original username from phpBB as its name
