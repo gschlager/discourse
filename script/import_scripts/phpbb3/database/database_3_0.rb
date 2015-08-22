@@ -271,7 +271,7 @@ module ImportScripts::PhpBB3
       subquery = @database
                    .select(:m__msg_id, :m__root_level, recipient_id, normalized_subject)
                    .from(table(:privmsgs, :m))
-                   .where(db.select(1)
+                   .where(@database.select(1)
                             .from(table(:privmsgs, :x))
                             .where { (x__msg_id < m__msg_id) & (x__root_level =~ m__root_level) &
                             (x__author_id =~ m__author_id) & (x__to_address =~ m__to_address) &
