@@ -1,7 +1,7 @@
 # This is an example settings file for the phpBB3 importer.
 
 database:
-  type: MySQL # MySQL, MariaDB, MSSQL, Oracle, PostgreSQL, SQLite3, FireBird
+  type: MySQL # MySQL, MariaDB, MSSQL, Oracle, PostgreSQL, SQLite3
   host: localhost
   username: root
   password:

@@ -25,7 +25,7 @@ module ImportScripts::PhpBB3
           Sequel.function(:instr, column, substring)
         when 'mssql'
           Sequel.function(:charindex, substring, column)
-        when 'postgresql', 'firebird'
+        when 'postgresql'
           Sequel.function(:position, Sequel.lit('? in ?', substring, column))
         else
           raise "The database type '#{@db_type}' is not supported."
@@ -34,7 +34,7 @@ module ImportScripts::PhpBB3
 
     def substring(column, start_position)
       case @db_type
-        when 'mysql', 'mariadb', 'postgresql', 'firebird'
+        when 'mysql', 'mariadb', 'postgresql'
           Sequel.function(:substring, Sequel.lit('? from ?', column, start_position))
         when 'mssql'
           Sequel.function(:substring, column, start_position, Sequel.function(:len, column))

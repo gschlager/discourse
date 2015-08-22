@@ -273,7 +273,7 @@ module ImportScripts::PhpBB3
                    .from(table(:privmsgs, :m))
                    .where(db.select(1)
                             .from(table(:privmsgs, :x))
-                            .where { (x__msg_id < m__msg_id) & (x__rot_level =~ m__root_level) &
+                            .where { (x__msg_id < m__msg_id) & (x__root_level =~ m__root_level) &
                             (x__author_id =~ m__author_id) & (x__to_address =~ m__to_address) &
                             (x__message_time =~ m__message_time) }.exists).invert
 

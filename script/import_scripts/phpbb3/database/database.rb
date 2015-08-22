@@ -61,8 +61,6 @@ module ImportScripts::PhpBB3
           'postgres'
         when 'sqlite3'
           'sqlite'
-        when 'firebird'
-          'firebird'
         else
           raise "The database type '#{@database_settings.type}' is not supported."
       end
