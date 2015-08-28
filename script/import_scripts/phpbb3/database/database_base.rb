@@ -44,14 +44,5 @@ module ImportScripts::PhpBB3
           raise "The database type '#{@db_type}' is not supported."
       end
     end
-
-    def to_char(column)
-      case @db_type
-        when 'oracle'
-          Sequel.function(:to_char, column)
-        else
-          column
-      end
-    end
   end
 end

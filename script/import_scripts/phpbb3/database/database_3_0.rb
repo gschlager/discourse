@@ -271,7 +271,7 @@ module ImportScripts::PhpBB3
       # CAST(SUBSTRING(m.to_address, 3) AS SIGNED INTEGER)
       # ELSE NULL END AS recipient_id
       is_root_message_with_one_recipient = {m__root_level: 0, position(:m__to_address, ':') => 0}
-      extract_user_id = Sequel.cast(substring(to_char(:m__to_address), 3), Integer)
+      extract_user_id = Sequel.cast(substring(:m__to_address, 3), Integer)
       recipient_id = Sequel.case([[is_root_message_with_one_recipient, extract_user_id]], nil).as(:recipient_id)
 
       # LOWER(CASE WHEN m.message_subject LIKE 'Re: %' THEN
@@ -282,7 +282,7 @@ module ImportScripts::PhpBB3
       normalized_subject = Sequel.function(:lower, subject).as(:normalized_subject)
 
       is_duplicate_message = Sequel.virtual_row { (x__msg_id < m__msg_id) & (x__root_level =~ m__root_level) &
-        (x__author_id =~ m__author_id) & (to_char(x__to_address) =~ to_char(m__to_address)) &
+        (x__author_id =~ m__author_id) & (x__to_address =~ m__to_address) &
         (x__message_time =~ m__message_time) }
 
       subquery = @database
