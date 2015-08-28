@@ -45,6 +45,7 @@ import:
   private_messages: true
   polls: true
 
+  # FIXME: Doesn't work with Oracle. Remove it!
   # This tries to fix Private Messages that were imported from phpBB2 to phpBB3.
   # You should enable this option if you see duplicate messages or lots of related
   # messages as topics with just one post (e.g. 'Importer', 'Re: Importer', 'Re: Importer'
