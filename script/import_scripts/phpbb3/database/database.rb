@@ -11,8 +11,9 @@ module ImportScripts::PhpBB3
     # @param database_settings [ImportScripts::PhpBB3::DatabaseSettings]
     def initialize(database_settings)
       @database_settings = database_settings
-      @database = create_database_client
 
+      change_environment
+      @database = create_database_client
       change_database_client_settings
     end
 
@@ -37,9 +38,16 @@ module ImportScripts::PhpBB3
     def create_database_client
       Sequel.connect(:adapter => database_adapter,
                      :host => @database_settings.host,
-                     :database => @database_settings.schema,
+                     :database => @database_settings.database_name,
                      :user => @database_settings.username,
                      :password => @database_settings.password)
+    end
+
+    def change_environment
+      case @database_settings.type.downcase
+        when 'oracle'
+          ENV['NLS_LANG'] = @database_settings.nls_lang
+      end
     end
 
     def change_database_client_settings

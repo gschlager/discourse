@@ -21,7 +21,7 @@ module ImportScripts::PhpBB3
 
     def position(column, substring)
       case @db_type
-        when 'mysql', 'mariadb', 'oracle', 'sqlite3'
+        when 'mysql', 'mariadb', 'oracle'
           Sequel.function(:instr, column, substring)
         when 'mssql'
           Sequel.function(:charindex, substring, column)
@@ -38,10 +38,19 @@ module ImportScripts::PhpBB3
           Sequel.function(:substring, Sequel.lit('? from ?', column, start_position))
         when 'mssql'
           Sequel.function(:substring, column, start_position, Sequel.function(:len, column))
-        when 'oracle', 'sqlite3'
+        when 'oracle'
           Sequel.function(:substr, column, start_position)
         else
           raise "The database type '#{@db_type}' is not supported."
+      end
+    end
+
+    def to_char(column)
+      case @db_type
+        when 'oracle'
+          Sequel.function(:to_char, column)
+        else
+          column
       end
     end
   end

@@ -1,13 +1,14 @@
 # This is an example settings file for the phpBB3 importer.
 
 database:
-  type: MySQL # MySQL, MariaDB, MSSQL, Oracle, PostgreSQL, SQLite3
+  type: MySQL # MySQL, MariaDB, MSSQL, Oracle, PostgreSQL
   host: localhost
   username: root
   password:
-  schema: phpbb
+  database_name: phpbb
   table_prefix: phpbb # Usually all table names start with phpbb. Change this, if your forum is using a different prefix.
   batch_size: 1000 # Don't change this unless you know what you're doing. The default (1000) should work just fine.
+  nls_lang: American_America.AL32UTF8 # The NLS_LANG used for connecting to an Oracle database.
 
 import:
   # Enable this option if you want to have a better conversion of BBCodes to Markdown.

@@ -63,18 +63,20 @@ module ImportScripts::PhpBB3
     attr_reader :host
     attr_reader :username
     attr_reader :password
-    attr_reader :schema
+    attr_reader :database_name
     attr_reader :table_prefix
     attr_reader :batch_size
+    attr_reader :nls_lang
 
     def initialize(yaml)
       @type = yaml['type']
       @host = yaml['host']
       @username = yaml['username']
       @password = yaml['password']
-      @schema = yaml['schema']
+      @database_name = yaml['database_name']
       @table_prefix = yaml['table_prefix']
       @batch_size = yaml['batch_size']
+      @nls_lang = yaml['nls_lang']
     end
   end
 end

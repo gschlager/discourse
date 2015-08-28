@@ -23,7 +23,7 @@ module ImportScripts::PhpBB3
                 :b__ban_reason, :u__user_posts, :u__user_website, :u__user_from, :u__user_birthday,
                 :u__user_avatar_type, :u__user_avatar)
         .from(table(:users, :u))
-        .join(table(:groups, :g), [:group_id])
+        .join(table(:groups, :g), :u__group_id => :g__group_id)
         .left_join(table(:banlist, :b), banlist_join_condition)
         .where { (u__user_type !~ Constants::USER_TYPE_IGNORE) }
         .order(:u__user_id)
@@ -61,7 +61,7 @@ module ImportScripts::PhpBB3
       @database
         .select(:f__forum_id, :f__parent_id, :f__forum_name, :f__forum_desc, :x__first_post_time)
         .from(table(:forums, :f))
-        .left_join(first_post_times, [:forum_id])
+        .left_join(first_post_times, {:f__forum_id => :x__forum_id})
         .where { (f__forum_type !~ Constants::FORUM_TYPE_LINK) }
         .order(:f__parent_id, :f__left_id)
         .all
@@ -82,7 +82,7 @@ module ImportScripts::PhpBB3
                 :p__post_text, :p__post_time, :p__post_username, :t__topic_status, :t__topic_type, :t__poll_title,
                 poll_end, :t__poll_max_options, :p__post_attachment)
         .from(table(:posts, :p))
-        .join(table(:topics, :t), [:topic_id])
+        .join(table(:topics, :t), :p__topic_id => :t__topic_id)
         .order(:p__post_id)
         .limit(@batch_size)
         .offset(offset)
@@ -197,7 +197,7 @@ module ImportScripts::PhpBB3
         @database
           .select(:m__to_address)
           .from(table(:privmsgs, :m))
-          .join(table(:import_privmsgs, :i), [:msg_id])
+          .join(table(:import_privmsgs, :i), :m__msg_id => :i__msg_id)
           .where { (i__msg_id =~ msg_id) | (i__root_msg_id =~ msg_id) }
           .all
       else
@@ -231,7 +231,7 @@ module ImportScripts::PhpBB3
       @database
         .select(:b__user_id, :t__topic_first_post_id)
         .from(table(:bookmarks, :b))
-        .join(table(:topics, :t), [:topic_id])
+        .join(table(:topics, :t), :b__topic_id => :t__topic_id)
         .order(:b__user_id, :b__topic_id)
         .limit(@batch_size)
         .offset(offset)
@@ -271,7 +271,7 @@ module ImportScripts::PhpBB3
       # CAST(SUBSTRING(m.to_address, 3) AS SIGNED INTEGER)
       # ELSE NULL END AS recipient_id
       is_root_message_with_one_recipient = {m__root_level: 0, position(:m__to_address, ':') => 0}
-      extract_user_id = Sequel.cast(substring(:m__to_address, 3), Integer)
+      extract_user_id = Sequel.cast(substring(to_char(:m__to_address), 3), Integer)
       recipient_id = Sequel.case([[is_root_message_with_one_recipient, extract_user_id]], nil).as(:recipient_id)
 
       # LOWER(CASE WHEN m.message_subject LIKE 'Re: %' THEN
@@ -282,7 +282,8 @@ module ImportScripts::PhpBB3
       normalized_subject = Sequel.function(:lower, subject).as(:normalized_subject)
 
       is_duplicate_message = Sequel.virtual_row { (x__msg_id < m__msg_id) & (x__root_level =~ m__root_level) &
-        (x__author_id =~ m__author_id) & (x__to_address =~ m__to_address) & (x__message_time =~ m__message_time) }
+        (x__author_id =~ m__author_id) & (to_char(x__to_address) =~ to_char(m__to_address)) &
+        (x__message_time =~ m__message_time) }
 
       subquery = @database
                    .select(:m__msg_id, :m__root_level, recipient_id, normalized_subject)
@@ -304,7 +305,7 @@ module ImportScripts::PhpBB3
     def create_import_message_table
       @database.create_table(table(:import_privmsgs)) do
         column :msg_id, Integer, :primary_key => true, :null => false
-        column :root_msg_id, Integer, :null => false, :index => true
+        column :root_msg_id, Integer, :null => false, :index =>{:name => "#{@table_prefix}_import_privmsgs_idx"}
       end
     end
 
@@ -321,7 +322,7 @@ module ImportScripts::PhpBB3
       msg_id_subquery = @database
                           .select(:a__msg_id)
                           .from(table(:privmsgs, :a))
-                          .join(table(:import_privmsgs_temp, :b), [:msg_id])
+                          .join(table(:import_privmsgs_temp, :b), :a__msg_id => :b__msg_id)
                           .where(is_same_conversation)
                           .order(:a__message_time)
                           .limit(1)
@@ -331,7 +332,7 @@ module ImportScripts::PhpBB3
       subquery = @database
                    .select(:m__msg_id, root_msg_id)
                    .from(table(:privmsgs, :m))
-                   .join(table(:import_privmsgs_temp, :i), [:msg_id])
+                   .join(table(:import_privmsgs_temp, :i), :m__msg_id => :i__msg_id)
 
       @database[table(:import_privmsgs)]
         .insert([:msg_id, :root_msg_id], subquery)
