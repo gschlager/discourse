@@ -1,7 +1,8 @@
 class Admin::SiteSettingsController < Admin::AdminController
 
   def index
-    render_json_dump(site_settings: SiteSetting.all_settings, diags: SiteSetting.diags)
+    render_json_dump(site_settings: SiteSetting.all_settings, diags: SiteSetting.diags,
+                     changes: SiteSetting.changed_setting_names)
   end
 
   def update

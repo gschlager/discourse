@@ -198,6 +198,11 @@ module SiteSettingExtension
       end
   end
 
+  def changed_setting_names
+    yaml = YAML.load_file(File.join(Rails.root, 'config', 'site_setting_changes.yml'))
+    yaml['changes']
+  end
+
   def description(setting)
     I18n.t("site_settings.#{setting}")
   end
