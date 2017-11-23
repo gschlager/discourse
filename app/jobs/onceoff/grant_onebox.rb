@@ -8,21 +8,15 @@ module Jobs
       to_award = {}
 
       Post.secured(Guardian.new)
-        .select(:id, :created_at, :raw, :user_id)
+        .select(:id, :created_at, :cooked, :user_id)
         .visible
         .public_posts
-        .where("raw LIKE '%http%'")
+        .where("cooked LIKE '%onebox%'")
         .find_in_batches do |group|
         group.each do |p|
-          begin
-            # Note we can't use `p.cooked` here because oneboxes have been cooked out
-            cooked = PrettyText.cook(p.raw)
-            doc = Nokogiri::HTML::fragment(cooked)
-            if doc.search('a.onebox').size > 0
-              to_award[p.user_id] ||= { post_id: p.id, created_at: p.created_at }
-            end
-          rescue
-            nil # if there is a problem cooking we don't care
+          doc = Nokogiri::HTML::fragment(p.cooked)
+          if doc.search('a.onebox').size > 0
+            to_award[p.user_id] ||= { post_id: p.id, created_at: p.created_at }
           end
         end
 
