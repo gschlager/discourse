@@ -5,7 +5,8 @@ module Email
   module BuildEmailHelper
     def build_email(*builder_args)
       builder = Email::MessageBuilder.new(*builder_args)
-      headers(builder.header_args) if builder.header_args.present?
+      header_args = builder.header_args
+      headers(header_args) if header_args.present?
       mail(builder.build_args).tap { |message|
         if message && h = builder.html_part
           message.html_part = h
@@ -156,7 +157,7 @@ module Email
         result[ALLOW_REPLY_BY_EMAIL_HEADER] = true
         result['Reply-To'] = reply_by_email_address
       else
-        result['Reply-To'] = from_value
+        result['Reply-To'] = from_value(append_username: false)
       end
 
       result.merge(MessageBuilder.custom_headers(SiteSetting.email_custom_headers))
@@ -187,10 +188,10 @@ module Email
       allow_reply_by_email? && @opts[:private_reply]
     end
 
-    def from_value
-      return @from_value if @from_value
-      @from_value = @opts[:from] || SiteSetting.notification_email
-      @from_value = alias_email(@from_value)
+    def from_value(append_username: true)
+      from = @opts[:from] || SiteSetting.notification_email
+      from = from.sub('@', "+#{@opts[:username]}@") if append_username && @opts[:username].present?
+      alias_email(from)
     end
 
     def reply_by_email_address

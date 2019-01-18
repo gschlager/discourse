@@ -250,6 +250,7 @@ describe UserNotifications do
 
       # from should include full user name
       expect(mail[:from].display_names).to eql(['John Doe via Discourse'])
+      expect(mail.from).to eq(["noreply+#{response_by_user.username}@test.localhost"])
 
       # subject should include category name
       expect(mail.subject).to match(/India/)
@@ -358,6 +359,7 @@ describe UserNotifications do
 
       # from should include username if "show user full names" is disabled
       expect(mail[:from].display_names).to eql(['john via Discourse'])
+      expect(mail.from).to eq(["noreply+#{response_by_user.username}@test.localhost"])
 
       # subject should not include category name
       expect(mail.subject).not_to match(/Uncategorized/)
@@ -444,6 +446,7 @@ describe UserNotifications do
 
       # from should include username if full user name is not provided
       expect(mail[:from].display_names).to eql(['john via Discourse'])
+      expect(mail.from).to eq(["noreply+#{response_by_user.username}@test.localhost"])
 
       # subject should include "[PM]"
       expect(mail.subject).to include("[PM] ")
