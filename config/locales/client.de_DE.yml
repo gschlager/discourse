@@ -1,0 +1,32 @@
+#encoding: utf-8
+#This file contains content for the client portion of Discourse, sent out
+#to the Javascript app.
+#To work with us on translations, see: https://www.transifex.com/projects/p/discourse-org/
+#This is a "source" file, which is used by Transifex to get translations for other languages.
+#After this file is changed, it needs to be pushed by a maintainer to Transifex:
+#tx push -s
+#Read more here: https://meta.discourse.org/t/contribute-a-translation-to-discourse/14882
+#To validate this YAML file after you change it, please paste it into http://yamllint.com/
+de:
+  js:
+    user_action_groups:
+      "1": "Likes"
+      "2": "Likes"
+      "3": "Bookmarks"
+      "4": "Topics"
+      "5": "Replies"
+      "6": "Responses"
+      "7": "Mentions"
+      "9": "Quotes"
+      "11": "Edits"
+      "12": "Sent Items"
+      "13": "Inbox"
+      "14": "Pending"
+      "15": "Drafts"
+    topic:
+      notifications:
+        reasons:
+          "3": "You will receive notifications because you are watching this topic."
+          "2": 'You will see a count of new replies because you <a href="{{basePath}}/u/{{username}}/preferences">read this topic</a>.'
+          "1": "You will be notified if someone mentions your @name or replies to you."
+          "0": "You are ignoring all notifications on this topic."
