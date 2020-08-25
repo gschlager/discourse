@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "thor"
+
+module DiscourseCLI
+  Dir.glob(File.expand_path("cli/commands/*.rb", __dir__))
+    .each { |command| require command }
+
+  class Main
+
+  end
+end
