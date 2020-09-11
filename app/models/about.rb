@@ -76,7 +76,8 @@ class About
        active_users_30_days: User.where('last_seen_at > ?', 30.days.ago).count,
        like_count: UserAction.where(action_type: UserAction::LIKE).count,
        likes_7_days: UserAction.where(action_type: UserAction::LIKE).where("created_at > ?", 7.days.ago).count,
-       likes_30_days: UserAction.where(action_type: UserAction::LIKE).where("created_at > ?", 30.days.ago).count
+       likes_30_days: UserAction.where(action_type: UserAction::LIKE).where("created_at > ?", 30.days.ago).count,
+       locale_usage: locale_usage_stats
     }
   end
 
@@ -120,5 +121,10 @@ class About
 
   def category_mods_limit=(number)
     @category_mods_limit = number
+  end
+
+  def locale_usage_stats
+    default_locale = ActiveRecord::Base.connection.quote(SiteSetting.default_locale)
+    User.real.group("COALESCE(NULLIF(locale, ''), #{default_locale})").count
   end
 end
