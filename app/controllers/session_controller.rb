@@ -101,7 +101,7 @@ class SessionController < ApplicationController
         end
       else
         cookies[:sso_payload] = request.query_string
-        redirect_to path('/login')
+        render :sso_redirect, status: 403
       end
     else
       render body: nil, status: 404

@@ -1,0 +1,10 @@
+<div id='simple-container'>
+  <h2>Login Required</h2>
+
+  <p>You will automatically redirected to the <a href="<%= path('/login') %>">login page</a>.</p>
+
+  <%- content_for(:no_ember_head) do %>
+    <%= tag.meta id: 'data-auto-redirect', data: { path: path('/login') } %>
+  <%- end %>
+  <%= preload_script 'auto-redirect' %>
+</div>
