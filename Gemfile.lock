@@ -438,6 +438,9 @@ GEM
     thor (1.1.0)
     thread_safe (0.3.6)
     tilt (2.0.10)
+    tty-cursor (0.7.1)
+    tty-spinner (0.9.3)
+      tty-cursor (~> 0.7)
     tzinfo (1.2.9)
       thread_safe (~> 0.1)
     uglifier (4.2.0)
@@ -587,6 +590,7 @@ DEPENDENCIES
   stackprof
   test-prof
   thor
+  tty-spinner
   uglifier
   unf
   unicorn
@@ -596,4 +600,4 @@ DEPENDENCIES
   yaml-lint
 
 BUNDLED WITH
-   2.2.6
+   2.2.7

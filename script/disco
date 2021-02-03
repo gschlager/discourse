@@ -1,13 +1,18 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require "thor"
+require 'thor'
+require_relative 'cli/commands/backup'
 
 module DiscourseCLI
-  Dir.glob(File.expand_path("cli/commands/*.rb", __dir__))
-    .each { |command| require command }
+  class Main < Thor
+    desc "backup SUBCOMMAND", "Create, restore and manage backups"
+    subcommand "backup", Backup
 
-  class Main
-
+    def self.exit_on_failure?
+      true
+    end
   end
 end
+
+DiscourseCLI::Main.start

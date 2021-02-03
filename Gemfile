@@ -124,6 +124,7 @@ gem 'mini_scheduler'
 gem 'execjs', require: false
 gem 'mini_racer'
 
+gem 'tty-spinner', require: false
 gem 'highline', require: false
 
 gem 'rack'
