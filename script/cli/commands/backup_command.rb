@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
-require_relative '../support/spinner'
 require 'thor'
 
 module DiscourseCLI
-  class Backup < Thor
-    include HasSpinner
+  class BackupCommand < Thor
 
     desc "create", "Creates a backup"
     def create
@@ -19,14 +17,11 @@ module DiscourseCLI
     method_option :interactive, type: :boolean, default: true
     method_option :path, type: :string, desc: "Overrides the backup location and looks for the backup file in this directory."
     def restore(filename)
-      spin("Intitialize restore") do
-        sleep(2)
-      end
+      DiscourseCLI.load_rails
+      require_relative '../support/backup_restore_factory'
 
-      spin("Restoring database") do
-        sleep(2)
-        raise "foo"
-      end
+      restorer = BackupRestore::Restorer.new(factory: BackupRestoreFactory.new)
+      restorer.run
     end
 
     desc "list", "Lists existing backups"
