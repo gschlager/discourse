@@ -15,7 +15,6 @@ module DiscourseCLI
   end
 
   def self.load_rails
-    puts "Loading Rails..."
     require File.expand_path("../config/environment", __dir__)
   end
 end

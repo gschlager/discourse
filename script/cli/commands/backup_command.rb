@@ -20,8 +20,24 @@ module DiscourseCLI
       DiscourseCLI.load_rails
       require_relative '../support/backup_restore_factory'
 
-      restorer = BackupRestore::Restorer.new(factory: BackupRestoreFactory.new)
-      restorer.run
+      begin
+        restorer = BackupRestore::Restorer.new(
+          user_id: Discourse.system_user.id,
+          filename: filename,
+          disable_emails: options[:disable_emails],
+          factory: BackupRestoreFactory.new(user_id: Discourse.system_user.id)
+        )
+        restorer.run
+      rescue BackupRestore::FilenameMissingError
+        puts '', 'The filename argument was missing.', ''
+        usage
+      rescue BackupRestore::RestoreDisabledError
+        puts '', 'Restores are not allowed.', 'An admin needs to set allow_restore to true in the site settings before restores can be run.'
+        puts "Enable now with", '', "discourse enable_restore", ''
+        puts 'Restore cancelled.', ''
+      end
+
+      exit(1) unless restorer.try(:success)
     end
 
     desc "list", "Lists existing backups"

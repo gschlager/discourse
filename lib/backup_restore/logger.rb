@@ -2,17 +2,44 @@
 
 module BackupRestore
   class Logger
-    def initialize
-      @steps = []
+    attr_reader :logs
+
+    def initialize(user_id: nil, client_id: nil)
+      @user_id = user_id
+      @client_id = client_id
+      @publish_to_message_bus = @user_id.present? && @client_id.present?
+
+      @log_entries = []
     end
 
-    def step(name)
-      @steps << { name: name, details: [] }
-      yield
+    def log_with_status
+
+    def section(name)
+
+
+      DateTime.now.utc.iso8601
     end
 
-    def log(message)
-      raise NotImplementedError
+    def log(message, ex = nil)
+      return if Rails.env.test?
+
+      timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
+      puts(message)
+      publish_log(message, timestamp)
+      save_log(message, timestamp)
+      Rails.logger.error("#{ex}\n" + ex.backtrace.join("\n")) if ex
+    end
+
+    protected
+
+    def publish_log(message, timestamp)
+      return unless @publish_to_message_bus
+      data = { timestamp: timestamp, operation: "restore", message: message }
+      MessageBus.publish(BackupRestore::LOGS_CHANNEL, data, user_ids: [@user_id], client_ids: [@client_id])
+    end
+
+    def save_log(message, timestamp)
+      @logs << "[#{timestamp}] #{message}"
     end
   end
 end
