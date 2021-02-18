@@ -213,6 +213,7 @@ GEM
     mini_sql (1.0.1)
     mini_suffix (0.3.2)
       ffi (~> 1.9)
+    mini_tarball (0.1.0)
     minitest (5.14.3)
     mocha (1.12.0)
     mock_redis (0.27.3)
@@ -534,6 +535,7 @@ DEPENDENCIES
   mini_scheduler
   mini_sql
   mini_suffix
+  mini_tarball
   minitest
   mocha
   mock_redis

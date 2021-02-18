@@ -7,7 +7,8 @@ module DiscourseCLI
 
     desc "create", "Creates a backup"
     def create
-
+      DiscourseCLI.load_rails
+      BackupRestore::SimpleBackuper.new.run
     end
 
     desc "restore FILENAME", "Restores a backup"
