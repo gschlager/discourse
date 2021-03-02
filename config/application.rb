@@ -353,6 +353,8 @@ module Discourse
             logical_path =~ /\/dist/
         end
       end
+
+      Developer.update_global_notice
     end
 
     if ENV['RBTRACE'] == "1"

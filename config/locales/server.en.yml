@@ -4673,6 +4673,10 @@ en:
     resend_email:
       title: "Resend Activation Email"
       message: "<p>We've re-sent the activation email to <b>%{email}</b>"
+    global_notice:
+      no_emails: "Congratulations, you installed Discourse! Unfortunately, no administrator emails were defined during setup, so finalizing the configuration may be difficult. Please add a developer email in the configuration file or <a href='https://meta.discourse.org/t/create-admin-account-from-console/17274'>create an administrator account from console</a>."
+      with_emails: "Congratulations, you installed Discourse! Register a new admin account with one of the following email addresses: %{emails}"
+      email_address_joiner: ", "
 
   safe_mode:
     title: "Enter safe mode"
