@@ -128,6 +128,10 @@ module BackupRestore
     )
   end
 
+  def self.redis_keys
+    [running_key, shutdown_signal_key, start_logs_message_id_key]
+  end
+
   private
 
   def self.running_key

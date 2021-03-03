@@ -102,11 +102,6 @@ describe BackupRestore::SystemInterface do
   end
 
   describe "#wait_for_sidekiq" do
-    it "waits 6 seconds even when there are no running Sidekiq jobs" do
-      subject.expects(:sleep).with(6).once
-      subject.wait_for_sidekiq
-    end
-
     context "with Sidekiq workers" do
       before { flush_sidekiq_redis_namespace }
       after { flush_sidekiq_redis_namespace }
@@ -149,6 +144,11 @@ describe BackupRestore::SystemInterface do
         end
       end
 
+      it "waits 6 seconds even when there are no running Sidekiq jobs" do
+        subject.expects(:sleep).with(6).once
+        subject.wait_for_sidekiq
+      end
+
       it "waits up to 60 seconds for jobs running for the current site to finish" do
         subject.expects(:sleep).with(6).times(10)
         create_workers
@@ -178,6 +178,27 @@ describe BackupRestore::SystemInterface do
           subject.flush_redis
 
           expect(Sidekiq.paused?).to eq(true)
+        end
+      end
+
+      context "backup/restore running" do
+        after do
+          BackupRestore.mark_as_not_running!
+        end
+
+        it "doesn't remove the keys used by backup and restore" do
+          MessageBus.stubs(:last_id).with(BackupRestore::LOGS_CHANNEL).returns(17)
+          BackupRestore.mark_as_running!
+          BackupRestore.set_shutdown_signal!
+
+          expect(BackupRestore.is_operation_running?).to eq(true)
+          expect(BackupRestore.should_shutdown?).to eq(true)
+          expect(BackupRestore.send(:start_logs_message_id)).to eq(17)
+
+          subject.flush_redis
+          expect(BackupRestore.is_operation_running?).to eq(true)
+          expect(BackupRestore.should_shutdown?).to eq(true)
+          expect(BackupRestore.send(:start_logs_message_id)).to eq(17)
         end
       end
 

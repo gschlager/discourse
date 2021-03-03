@@ -93,9 +93,11 @@ module BackupRestore
     end
 
     def flush_redis
+      ignored_keys = [SidekiqPauser::PAUSED_KEY] + BackupRestore.redis_keys
+
       redis = Discourse.redis
       redis.scan_each(match: "*") do |key|
-        redis.del(key) unless key == SidekiqPauser::PAUSED_KEY
+        redis.del(key) unless ignored_keys.include?(key)
       end
     end
 
