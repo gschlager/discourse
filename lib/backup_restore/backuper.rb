@@ -15,7 +15,6 @@ module BackupRestore
       @with_uploads = opts[:with_uploads].nil? ? include_uploads? : opts[:with_uploads]
       @filename_override = opts[:filename]
 
-      ensure_no_operation_is_running
       ensure_we_have_a_user
 
       initialize_state
@@ -60,10 +59,6 @@ module BackupRestore
     end
 
     protected
-
-    def ensure_no_operation_is_running
-      raise BackupRestore::OperationRunningError if BackupRestore.is_operation_running?
-    end
 
     def ensure_we_have_a_user
       @user = User.find_by(id: @user_id)

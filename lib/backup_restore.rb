@@ -33,7 +33,11 @@ module BackupRestore
   end
 
   def self.mark_as_running!
-    Discourse.redis.setex(running_key, 60, "1")
+    if !Discourse.redis.set(running_key, "1", ex: 60, nx: true)
+      raise BackupRestore::OperationRunningError
+    end
+
+    Discourse.redis.set(running_key, "1", ex: 60, nx: true)
     save_start_logs_message_id
     keep_it_running
   end
