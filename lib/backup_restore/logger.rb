@@ -12,7 +12,7 @@ module BackupRestore
       @logs = []
     end
 
-    def log_task(message, fail_on_error: true)
+    def log_task(message, fail_on_error: false)
       log(message)
 
       begin

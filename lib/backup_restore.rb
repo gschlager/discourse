@@ -32,24 +32,6 @@ module BackupRestore
     true
   end
 
-  def self.mark_as_running!
-    if !Discourse.redis.set(running_key, "1", ex: 60, nx: true)
-      raise BackupRestore::OperationRunningError
-    end
-
-    Discourse.redis.set(running_key, "1", ex: 60, nx: true)
-    save_start_logs_message_id
-    keep_it_running
-  end
-
-  def self.is_operation_running?
-    !!Discourse.redis.get(running_key)
-  end
-
-  def self.mark_as_not_running!
-    Discourse.redis.del(running_key)
-  end
-
   def self.should_shutdown?
     !!Discourse.redis.get(shutdown_signal_key)
   end
@@ -133,27 +115,10 @@ module BackupRestore
   end
 
   def self.redis_keys
-    [running_key, shutdown_signal_key, start_logs_message_id_key]
+    [shutdown_signal_key]
   end
 
   private
-
-  def self.running_key
-    "backup_restore_operation_is_running"
-  end
-
-  def self.keep_it_running
-    # extend the expiry by 1 minute every 30 seconds
-    Thread.new do
-      Thread.current.name = "keep_it_running"
-
-      # this thread will be killed when the fork dies
-      while true
-        Discourse.redis.expire(running_key, 1.minute)
-        sleep 30.seconds
-      end
-    end
-  end
 
   def self.shutdown_signal_key
     "backup_restore_operation_should_shutdown"
@@ -165,19 +130,6 @@ module BackupRestore
 
   def self.clear_shutdown_signal!
     Discourse.redis.del(shutdown_signal_key)
-  end
-
-  def self.save_start_logs_message_id
-    id = MessageBus.last_id(LOGS_CHANNEL)
-    Discourse.redis.set(start_logs_message_id_key, id)
-  end
-
-  def self.start_logs_message_id
-    Discourse.redis.get(start_logs_message_id_key).to_i
-  end
-
-  def self.start_logs_message_id_key
-    "start_logs_message_id"
   end
 
   def self.spawn_process!(type, user_id, opts)

@@ -8,6 +8,9 @@ module BackupRestore
   end
 
   class SystemInterface
+    OPERATION_RUNNING_KEY = "backup_restore_operation_is_running"
+    LOGS_MESSAGE_ID_KEY = "start_logs_message_id"
+
     delegate :log, to: :@logger, private: true
 
     def initialize(logger)
@@ -34,23 +37,42 @@ module BackupRestore
       end
     end
 
-    def mark_restore_as_running
-      log "Marking restore as running..."
-      BackupRestore.mark_as_running!
+    def mark_operation_as_running
+      @logger.log_task("Marking operation as running") do
+        if !Discourse.redis.set(OPERATION_RUNNING_KEY, "1", ex: 60, nx: true)
+          raise BackupRestore::OperationRunningError
+        end
+
+        save_start_logs_message_id
+        keep_operation_running
+      end
+
+      nil
     end
 
-    def mark_restore_as_not_running
-      log "Marking restore as finished..."
-      BackupRestore.mark_as_not_running!
-    rescue => ex
-      log "Something went wrong while marking restore as finished.", ex
+    def mark_operation_as_finished
+      @logger.log_task("Marking operation as finished") do
+        Discourse.redis.del(OPERATION_RUNNING_KEY)
+
+        if @keep_operation_running_thread
+          @keep_operation_running_thread.kill
+          @keep_operation_running_thread.join
+          @keep_operation_running_thread = nil
+        end
+      end
+    end
+
+    def is_operation_running?
+      !!Discourse.redis.get(OPERATION_RUNNING_KEY)
     end
 
     def listen_for_shutdown_signal
       BackupRestore.clear_shutdown_signal!
 
       Thread.new do
-        while BackupRestore.is_operation_running?
+        Thread.current.name = "shutdown_wait"
+
+        while is_operation_running?
           exit if BackupRestore.should_shutdown?
           sleep 0.1
         end
@@ -60,14 +82,14 @@ module BackupRestore
     def pause_sidekiq(reason)
       return if Sidekiq.paused?
 
-      log "Pausing sidekiq..."
+      log "Pausing Sidekiq..."
       Sidekiq.pause!(reason)
     end
 
     def unpause_sidekiq
       return unless Sidekiq.paused?
 
-      log "Unpausing sidekiq..."
+      log "Unpausing Sidekiq..."
       Sidekiq.unpause!
     rescue => ex
       log "Something went wrong while unpausing Sidekiq.", ex
@@ -96,7 +118,7 @@ module BackupRestore
     end
 
     def flush_redis
-      ignored_keys = [SidekiqPauser::PAUSED_KEY] + BackupRestore.redis_keys
+      ignored_keys = [SidekiqPauser::PAUSED_KEY, OPERATION_RUNNING_KEY, LOGS_MESSAGE_ID_KEY] + BackupRestore.redis_keys
 
       redis = Discourse.redis
       redis.scan_each(match: "*") do |key|
@@ -129,6 +151,28 @@ module BackupRestore
 
     def delete_job_if_it_belongs_to_current_site(job)
       job.delete if job.args.first&.fetch("current_site_id", nil) == @current_db
+    end
+
+    def keep_operation_running
+      # extend the expiry by 1 minute every 30 seconds
+      @keep_operation_running_thread = Thread.new do
+        Thread.current.name = "keep_op_running"
+
+        # this thread will be killed when the fork dies
+        while true
+          Discourse.redis.expire(OPERATION_RUNNING_KEY, 1.minute)
+          sleep(30.seconds)
+        end
+      end
+    end
+
+    def save_start_logs_message_id
+      id = MessageBus.last_id(BackupRestore::LOGS_CHANNEL)
+      Discourse.redis.set(LOGS_MESSAGE_ID_KEY, id)
+    end
+
+    def start_logs_message_id
+      Discourse.redis.get(LOGS_MESSAGE_ID_KEY).to_i
     end
   end
 end

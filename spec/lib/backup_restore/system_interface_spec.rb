@@ -40,26 +40,24 @@ describe BackupRestore::SystemInterface do
     end
   end
 
-  describe "#mark_restore_as_running" do
-    it "calls mark_restore_as_running" do
-      BackupRestore.expects(:mark_as_running!).once
-      subject.mark_restore_as_running
-    end
-  end
+  it "successfully marks operation as running and finished" do
+    expect(subject.is_operation_running?).to eq(false)
 
-  describe "#mark_restore_as_not_running" do
-    it "calls mark_restore_as_not_running" do
-      BackupRestore.expects(:mark_as_not_running!).once
-      subject.mark_restore_as_not_running
-    end
+    subject.mark_operation_as_running
+    expect(subject.is_operation_running?).to eq(true)
+
+    expect { subject.mark_operation_as_running }.to raise_error(BackupRestore::OperationRunningError)
+
+    subject.mark_operation_as_finished
+    expect(subject.is_operation_running?).to eq(false)
   end
 
   describe "#listen_for_shutdown_signal" do
-    before { BackupRestore.mark_as_running! }
+    before { subject.mark_operation_as_running }
 
     after do
       BackupRestore.clear_shutdown_signal!
-      BackupRestore.mark_as_not_running!
+      subject.mark_operation_as_finished
     end
 
     it "exits the process when shutdown signal is set" do
@@ -183,22 +181,22 @@ describe BackupRestore::SystemInterface do
 
       context "backup/restore running" do
         after do
-          BackupRestore.mark_as_not_running!
+          subject.mark_operation_as_finished
         end
 
         it "doesn't remove the keys used by backup and restore" do
           MessageBus.stubs(:last_id).with(BackupRestore::LOGS_CHANNEL).returns(17)
-          BackupRestore.mark_as_running!
+          subject.mark_operation_as_running
           BackupRestore.set_shutdown_signal!
 
-          expect(BackupRestore.is_operation_running?).to eq(true)
+          expect(subject.is_operation_running?).to eq(true)
           expect(BackupRestore.should_shutdown?).to eq(true)
-          expect(BackupRestore.send(:start_logs_message_id)).to eq(17)
+          expect(subject.send(:start_logs_message_id)).to eq(17)
 
           subject.flush_redis
-          expect(BackupRestore.is_operation_running?).to eq(true)
+          expect(subject.is_operation_running?).to eq(true)
           expect(BackupRestore.should_shutdown?).to eq(true)
-          expect(BackupRestore.send(:start_logs_message_id)).to eq(17)
+          expect(subject.send(:start_logs_message_id)).to eq(17)
         end
       end
 
