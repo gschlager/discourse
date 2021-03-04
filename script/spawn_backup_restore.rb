@@ -6,7 +6,16 @@ fork do
 
   def backup
     user_id, opts = parse_params
-    BackupRestore::Backuper.new(user_id, opts).run
+
+    BackupRestore::Backuper.new(
+      user_id: user_id,
+      filename: opts[:filename],
+      factory: BackupRestore::Factory.new(
+        user_id: user_id,
+        client_id: opts[:client_id]
+      ),
+      with_uploads: opts[:with_uploads]
+    ).run
   end
 
   def restore

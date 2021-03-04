@@ -6,14 +6,16 @@ require "file_store/s3_store"
 module BackupRestore
 
   class Backuper
+    delegate :log, to: :@logger, private: true
+
     attr_reader :success
 
-    def initialize(user_id, opts = {})
+    def initialize(user_id:, factory:, filename: nil, with_uploads: nil)
       @user_id = user_id
-      @client_id = opts[:client_id]
-      @publish_to_message_bus = opts[:publish_to_message_bus] || false
-      @with_uploads = opts[:with_uploads].nil? ? include_uploads? : opts[:with_uploads]
-      @filename_override = opts[:filename]
+      @logger = factory.logger
+      @with_uploads = with_uploads.nil? ? include_uploads? : with_uploads
+      @filename_override = filename
+      @system = factory.create_system_interface
 
       ensure_we_have_a_user
 
@@ -24,9 +26,8 @@ module BackupRestore
       log "[STARTED]"
       log "'#{@user.username}' has started the backup!"
 
-      mark_backup_as_running
-
-      listen_for_shutdown_signal
+      @system.mark_operation_as_running
+      @system.listen_for_shutdown_signal
 
       ensure_directory_exists(@tmp_directory)
       ensure_directory_exists(@archive_directory)
@@ -88,22 +89,6 @@ module BackupRestore
         end
 
       @logs = []
-    end
-
-    def listen_for_shutdown_signal
-      BackupRestore.clear_shutdown_signal!
-
-      Thread.new do
-        while BackupRestore.is_operation_running?
-          exit if BackupRestore.should_shutdown?
-          sleep 0.1
-        end
-      end
-    end
-
-    def mark_backup_as_running
-      log "Marking backup as running..."
-      BackupRestore.mark_as_running!
     end
 
     def update_metadata
@@ -331,7 +316,7 @@ module BackupRestore
       log "Cleaning stuff up..."
       delete_uploaded_archive
       remove_tar_leftovers
-      mark_backup_as_not_running
+      @system.mark_operation_as_finished
       refresh_disk_space
     end
 
@@ -369,36 +354,9 @@ module BackupRestore
       log "Something went wrong while removing the following tmp directory: #{@tmp_directory}", ex
     end
 
-    def mark_backup_as_not_running
-      log "Marking backup as finished..."
-      BackupRestore.mark_as_not_running!
-    rescue => ex
-      log "Something went wrong while marking backup as finished.", ex
-    end
-
     def ensure_directory_exists(directory)
       log "Making sure '#{directory}' exists..."
       FileUtils.mkdir_p(directory)
     end
-
-    def log(message, ex = nil)
-      timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
-      puts(message)
-      publish_log(message, timestamp)
-      save_log(message, timestamp)
-      Rails.logger.error("#{ex}\n" + ex.backtrace.join("\n")) if ex
-    end
-
-    def publish_log(message, timestamp)
-      return unless @publish_to_message_bus
-      data = { timestamp: timestamp, operation: "backup", message: message }
-      MessageBus.publish(BackupRestore::LOGS_CHANNEL, data, user_ids: [@user_id], client_ids: [@client_id])
-    end
-
-    def save_log(message, timestamp)
-      @logs << "[#{timestamp}] #{message}"
-    end
-
   end
-
 end

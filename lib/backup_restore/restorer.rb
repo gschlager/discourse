@@ -33,7 +33,7 @@ module BackupRestore
       log "[STARTED]"
       log "'#{@user_info[:username]}' has started the restore!"
 
-      @system.mark_restore_as_running
+      @system.mark_operation_as_running
       @system.listen_for_shutdown_signal
 
       @tmp_directory, db_dump_path = @backup_file_handler.decompress
@@ -160,7 +160,7 @@ module BackupRestore
       @backup_file_handler.clean_up
       @system.unpause_sidekiq
       @system.disable_readonly_mode if Discourse.readonly_mode?
-      @system.mark_restore_as_not_running
+      @system.mark_operation_as_finished
     end
 
     def clear_theme_cache
