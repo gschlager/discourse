@@ -24,41 +24,40 @@ module BackupRestore
     def enable_readonly_mode
       return if @readonly_mode_was_enabled
 
-      @logger.log_task("Enabling readonly mode") do
-        Discourse.enable_readonly_mode
-      end
+      log "Enabling readonly mode..."
+      Discourse.enable_readonly_mode
+    rescue => ex
+      log "Something went wrong while enabling readonly mode", ex
     end
 
     def disable_readonly_mode
       return if @readonly_mode_was_enabled
 
-      @logger.log_task("Disabling readonly mode") do
-        Discourse.disable_readonly_mode
-      end
+      log "Disabling readonly mode..."
+      Discourse.disable_readonly_mode
+    rescue => ex
+      log "Something went wrong while disabling readonly mode", ex
     end
 
     def mark_operation_as_running
-      @logger.log_task("Marking operation as running") do
-        if !Discourse.redis.set(OPERATION_RUNNING_KEY, "1", ex: 60, nx: true)
-          raise BackupRestore::OperationRunningError
-        end
+      log "Marking operation as running..."
 
-        save_start_logs_message_id
-        keep_operation_running
+      if !Discourse.redis.set(OPERATION_RUNNING_KEY, "1", ex: 60, nx: true)
+        raise BackupRestore::OperationRunningError
       end
 
-      nil
+      save_start_logs_message_id
+      keep_operation_running
     end
 
     def mark_operation_as_finished
-      @logger.log_task("Marking operation as finished") do
-        Discourse.redis.del(OPERATION_RUNNING_KEY)
+      log "Marking operation as finished"
+      Discourse.redis.del(OPERATION_RUNNING_KEY)
 
-        if @keep_operation_running_thread
-          @keep_operation_running_thread.kill
-          @keep_operation_running_thread.join
-          @keep_operation_running_thread = nil
-        end
+      if @keep_operation_running_thread
+        @keep_operation_running_thread.kill
+        @keep_operation_running_thread.join
+        @keep_operation_running_thread = nil
       end
     end
 
@@ -156,9 +155,8 @@ module BackupRestore
     def keep_operation_running
       # extend the expiry by 1 minute every 30 seconds
       @keep_operation_running_thread = Thread.new do
-        Thread.current.name = "keep_op_running"
+        Thread.current.name = "keep_running"
 
-        # this thread will be killed when the fork dies
         while true
           Discourse.redis.expire(OPERATION_RUNNING_KEY, 1.minute)
           sleep(30.seconds)

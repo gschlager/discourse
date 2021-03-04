@@ -145,7 +145,10 @@ module BackupRestore
   end
 
   def self.backup_tables_count
-    DB.query_single("SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = 'backup'").first.to_i
+    DB.query_single(<<~SQL).first.to_i
+      SELECT COUNT(*) AS count
+      FROM information_schema.tables
+      WHERE table_schema = 'backup'
+    SQL
   end
-
 end
