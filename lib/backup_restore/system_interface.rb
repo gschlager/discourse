@@ -11,6 +11,7 @@ module BackupRestore
     delegate :log, to: :@logger, private: true
 
     def initialize(logger)
+      # @type [Logger]
       @logger = logger
 
       @current_db = RailsMultisite::ConnectionManagement.current_db
@@ -19,16 +20,18 @@ module BackupRestore
 
     def enable_readonly_mode
       return if @readonly_mode_was_enabled
-      log "Enabling readonly mode..."
-      Discourse.enable_readonly_mode
+
+      @logger.log_task("Enabling readonly mode") do
+        Discourse.enable_readonly_mode
+      end
     end
 
     def disable_readonly_mode
       return if @readonly_mode_was_enabled
-      log "Disabling readonly mode..."
-      Discourse.disable_readonly_mode
-    rescue => ex
-      log "Something went wrong while disabling readonly mode.", ex
+
+      @logger.log_task("Disabling readonly mode") do
+        Discourse.disable_readonly_mode
+      end
     end
 
     def mark_restore_as_running

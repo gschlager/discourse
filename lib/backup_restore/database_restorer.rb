@@ -94,7 +94,7 @@ module BackupRestore
         "DROP SCHEMA", # Discourse <= v1.5
         "CREATE SCHEMA", # PostgreSQL 11+
         "COMMENT ON SCHEMA", # PostgreSQL 11+
-        "SET default_table_access_method" # PostgreSQL 12
+        "SET default_table_access_method" # PostgreSQL 12+
       ].join("|")
 
       command = "sed -E '/^(#{unwanted_sql})/d' #{@db_dump_path}"

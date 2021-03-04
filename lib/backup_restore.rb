@@ -145,6 +145,8 @@ module BackupRestore
   def self.keep_it_running
     # extend the expiry by 1 minute every 30 seconds
     Thread.new do
+      Thread.current.name = "keep_it_running"
+
       # this thread will be killed when the fork dies
       while true
         Discourse.redis.expire(running_key, 1.minute)

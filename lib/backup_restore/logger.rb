@@ -12,6 +12,30 @@ module BackupRestore
       @logs = []
     end
 
+    def log_task(message, fail_on_error: true)
+      log(message)
+
+      begin
+        yield
+      rescue => ex
+        message = "Failed: #{message}"
+        if fail_on_error
+          log_error(message, ex)
+          raise
+        else
+          log_warning(message, ex)
+        end
+      end
+    end
+
+    def log_error(message, ex)
+      log(message, ex)
+    end
+
+    def log_warning(message, ex = nil)
+      log(message, ex)
+    end
+
     def log(message, ex = nil)
       return if Rails.env.test?
 

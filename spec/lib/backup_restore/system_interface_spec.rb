@@ -108,7 +108,7 @@ describe BackupRestore::SystemInterface do
 
       def flush_sidekiq_redis_namespace
         Sidekiq.redis do |redis|
-          redis.scan_each { |key| Discourse.redis.del(key) }
+          redis.scan_each { |key| redis.del(key) }
         end
       end
 
