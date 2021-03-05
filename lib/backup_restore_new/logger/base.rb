@@ -33,8 +33,8 @@ module BackupRestoreNew
       end
 
       def log_with_exception(message, ex, level)
-        log(message, level)
-        log(format_exception(ex), level) if ex
+        log(message, level: level)
+        log(format_exception(ex), level: level) if ex
       end
 
       def format_exception(ex)
