@@ -16,6 +16,7 @@ module DiscourseCLI
 
   def self.load_rails
     puts "Loading Rails..."
+    Dir.chdir(File.expand_path("..", __dir__))
     require File.expand_path("../config/environment", __dir__)
   end
 end

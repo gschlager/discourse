@@ -6,24 +6,15 @@ require 'tty-spinner'
 module DiscourseCLI
   # A very simple implementation to make the spinner work without a working TTY
   class DummySpinner
-    def initialize(format: ":title... ", success_mark: "✓", error_mark: "✗")
+    def initialize(format: ":title... ", success_mark: "✓", error_mark: "✘")
       @format = format
       @success_mark = success_mark
       @error_mark = error_mark
     end
 
-    def run
+    def auto_spin
       text = @title ? @format.gsub(":title", @title) : @format
       print(text)
-
-      begin
-        yield(self)
-      rescue
-        @success = false
-        raise
-      end
-
-      puts(@success ? @success_mark : @error_mark)
     end
 
     def update(title:)
@@ -31,58 +22,68 @@ module DiscourseCLI
     end
 
     def success
-      @success = true
+      puts(@success_mark)
     end
 
     def error
-      @success = false
+      puts(@error_mark)
     end
   end
 
   module HasSpinner
-    private
+    protected
 
-    def spinner
-      @spinner ||= begin
-        output = $stderr
-        success_mark = "✓"
-        error_mark = "✗"
-
-        if output.tty?
-          success_mark = success_mark.green
-          error_mark = error_mark.red
-        end
-
-        # Use the DummySpinner if there is no TTY or it's running in RubyMine
-        if !output.tty? || ENV['RM_INFO']
-          DummySpinner.new(
-            success_mark: "#{success_mark} DONE",
-            error_mark: "#{error_mark} ERROR"
-          )
-        else
-          TTY::Spinner.new(
-            "[:spinner] :title",
-            success_mark: success_mark,
-            error_mark: error_mark
-          )
-        end
-      end
-    end
-
-    def spin(title)
+    def spin(title, abort_on_error)
       result = nil
 
+      spinner = abort_on_error ? error_spinner : warning_spinner
       spinner.update(title: title)
-      spinner.run do |s|
-        begin
-          result = yield(s)
-          s.success
-        rescue StandardError => e
-          s.error
-        end
+      spinner.auto_spin
+
+      begin
+        result = yield
+        spinner.success
+      rescue StandardError
+        spinner.error
+        raise if abort_on_error
       end
 
       result
+    end
+
+    def error_spinner
+      @error_spinner ||= create_spinner(show_warning_instead_of_error: false)
+    end
+
+    def warning_spinner
+      @warning_spinner ||= create_spinner(show_warning_instead_of_error: true)
+    end
+
+    def create_spinner(show_warning_instead_of_error:)
+      output = $stderr
+      success_mark = " ✓ ".bold
+      error_mark = show_warning_instead_of_error ? " ⚠ ".bold : " ✘ ".bold
+
+      if output.tty?
+        if ENV['RM_INFO']
+          DummySpinner.new(
+            success_mark: "✓ DONE".green,
+            error_mark: show_warning_instead_of_error ? "⚠ WARNING".yellow : "✘ ERROR".red
+          )
+        else
+          TTY::Spinner.new(
+            ":spinner :title",
+            success_mark: success_mark.green,
+            error_mark: show_warning_instead_of_error ? error_mark.yellow : error_mark.red,
+            frames: TTY::Formats::FORMATS[:dots][:frames].map { |f| " #{f} " }
+          )
+        end
+      else
+        DummySpinner.new(
+          success_mark: "✓ DONE",
+          error_mark: show_warning_instead_of_error ? "⚠ WARNING" : "✘ ERROR"
+        )
+      end
     end
   end
 end

@@ -37,7 +37,7 @@ module BackupRestoreNew
     protected
 
     def initialize_backup
-      log_task("Initializing backup...") do
+      log_task("Initializing backup") do
         @success = false
         @current_db = RailsMultisite::ConnectionManagement.current_db
         sleep 3
@@ -45,37 +45,37 @@ module BackupRestoreNew
     end
 
     def add_db_dump
-      log_task("Creating database dump...") do
-        sleep 15
+      log_task("Creating database dump") do
+        sleep 3
       end
     end
 
     def add_uploads
-      log_task("Adding uploads...") do
-        sleep 15
+      log_task("Adding uploads") do
+        sleep 3
       end
     end
 
     def upload_backup
-      log_task("Uploading backup...") do
-        sleep 10
+      log_task("Uploading backup") do
+        sleep 3
       end
     end
 
     def finalize_backup
-      log_task("Finalizing backup...") do
+      log_task("Finalizing backup") do
         sleep 2
       end
     end
 
     def clean_up
-      log_task("Cleaning up...") do
+      log_task("Cleaning up") do
         sleep 2
       end
     end
 
     def notify_user
-      log_task("Notifying user...") do
+      log_task("Notifying user") do
         sleep 1
       end
     end

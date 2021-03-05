@@ -7,13 +7,15 @@ module DiscourseCLI
     include HasSpinner
 
     def log_task(message)
-      spin(message) do
+      spin(message, abort_on_error: false) do
         yield
       end
     end
 
-    def log(message, level: Logger::INFO)
+    def log(message, level: BackupRestoreNew::Logger::INFO)
       case level
+      when BackupRestoreNew::Logger::INFO
+        message = " 💡 #{message}"
       when BackupRestoreNew::Logger::ERROR
         message = message.red
       when BackupRestoreNew::Logger::WARNING
