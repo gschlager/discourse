@@ -446,6 +446,9 @@ GEM
     test-prof (1.0.5)
     thor (1.1.0)
     tilt (2.0.10)
+    tty-cursor (0.7.1)
+    tty-spinner (0.9.3)
+      tty-cursor (~> 0.7)
     tzinfo (2.0.4)
       concurrent-ruby (~> 1.0)
     uglifier (4.2.0)
@@ -597,6 +600,7 @@ DEPENDENCIES
   stackprof
   test-prof
   thor
+  tty-spinner
   uglifier
   unf
   unicorn

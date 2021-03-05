@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'thor'
+require_relative 'cli/commands/backup_command'
+
+module DiscourseCLI
+  class Main < Thor
+    desc "backup SUBCOMMAND", "Create, restore and manage backups"
+    subcommand "backup", BackupCommand
+
+    def self.exit_on_failure?
+      true
+    end
+  end
+
+  def self.load_rails
+    puts "Loading Rails..."
+    require File.expand_path("../config/environment", __dir__)
+  end
+end
+
+DiscourseCLI::Main.start
