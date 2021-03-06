@@ -247,6 +247,6 @@ gem 'webpush', require: false
 gem 'colored2', require: false
 gem 'tty-spinner', require: false
 gem 'maxminddb'
-gem 'mini_tarball', require: false
+gem 'mini_tarball', '~> 0.1.1', require: false
 
 gem 'rails_failover', require: false
