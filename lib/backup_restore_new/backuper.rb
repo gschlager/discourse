@@ -68,7 +68,7 @@ module BackupRestoreNew
 
     def add_db_dump(tar_writer)
       log_task("Creating database dump") do
-        tar_writer.add_file(name: BackupRestore::DUMP_FILE, **tar_file_attributes) do |output_stream|
+        tar_writer.add_file_from_stream(name: BackupRestore::DUMP_FILE, **tar_file_attributes) do |output_stream|
           dumper = DatabaseDumper.new
           dumper.dump_public_schema(output_stream)
         end
@@ -77,7 +77,7 @@ module BackupRestoreNew
 
     def add_uploads(tar_writer)
       log_task("Adding uploads") do
-        tar_writer.add_file(name: "uploads.tar.gz", **tar_file_attributes) do |output_stream|
+        tar_writer.add_file_from_stream(name: "uploads.tar.gz", **tar_file_attributes) do |output_stream|
           uploads_gz = Zlib::GzipWriter.new(output_stream, SiteSetting.backup_gzip_compression_level_for_uploads)
           MiniTarball::Writer.use(uploads_gz) do |uploads_tar|
             add_uploaded_files(uploads_tar)
@@ -93,7 +93,7 @@ module BackupRestoreNew
         relative_path.delete_prefix!("/")
 
         if File.exist?(absolute_path)
-          tar_writer.add_existing_file(name: relative_path, source_file_path: absolute_path)
+          tar_writer.add_file(name: relative_path, source_file_path: absolute_path)
         else
           puts "Missing file: #{absolute_path}"
         end
@@ -102,25 +102,25 @@ module BackupRestoreNew
 
     def upload_backup
       log_task("Uploading backup") do
-        sleep 3
+
       end
     end
 
     def finalize_backup
       log_task("Finalizing backup") do
-        sleep(3)
+
       end
     end
 
     def clean_up
       log_task("Cleaning up") do
-        sleep 2
+
       end
     end
 
     def notify_user
       log_task("Notifying user") do
-        sleep 1
+
       end
     end
 
