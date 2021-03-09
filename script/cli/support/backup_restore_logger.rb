@@ -8,10 +8,10 @@ module DiscourseCLI
     include HasSpinner
 
     def log_task(message, with_progress: false)
-      if with_progress
-        yield(BackupRestoreProgressLogger.new(message))
-      else
-        spin(message, abort_on_error: false) do
+      spin(message, abort_on_error: false) do |spinner|
+        if with_progress
+          yield(BackupRestoreProgressLogger.new(message, spinner))
+        else
           yield
         end
       end
@@ -36,16 +36,25 @@ module DiscourseCLI
   end
 
   class BackupRestoreProgressLogger < BackupRestoreNew::Logger::BaseProgressLogger
-    def initialize(message)
-      @progressbar = ProgressBar.create(title: message)
+    def initialize(message, spinner)
+      @message = message
+      @spinner = spinner
+      @max_progress = 0
+      @current_progress = 0
+      @last_update = Time.now
     end
 
     def max_progress=(value)
-      @progressbar.total = value
+      @spinner.update(max: value)
     end
 
     def increment
-      @progressbar.increment
+      @current_progress += 1
+
+      if (Time.now - @last_update) > 0.5
+        @spinner.update(current: @current_progress)
+        @last_update = Time.now
+      end
     end
   end
 end
