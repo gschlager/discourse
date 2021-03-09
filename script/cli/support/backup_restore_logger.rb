@@ -9,7 +9,13 @@ module DiscourseCLI
 
     def log_task(message, with_progress: false)
       if with_progress
-        yield(BackupRestoreProgressLogger.new(message))
+        logger = BackupRestoreProgressLogger.new(message)
+        begin
+          yield(logger)
+          logger.success
+        rescue StandardError
+          logger.error
+        end
       else
         spin(message, abort_on_error: false) do
           yield
@@ -37,7 +43,8 @@ module DiscourseCLI
 
   class BackupRestoreProgressLogger < BackupRestoreNew::Logger::BaseProgressLogger
     def initialize(message)
-      @progressbar = ProgressBar.create(title: message)
+      @message = message
+      @progressbar = ProgressBar.create(format: '%t | %c / %C | %E', title: " ⠒  #{message}", autofinish: false)
     end
 
     def max_progress=(value)
@@ -46,6 +53,16 @@ module DiscourseCLI
 
     def increment
       @progressbar.increment
+    end
+
+    def success
+      @progressbar.title = " ✓  ".bold.green + @message
+      @progressbar.finish
+    end
+
+    def error
+      @progressbar.title = " ✘  ".bold.red + @message
+      @progressbar.finish
     end
   end
 end
