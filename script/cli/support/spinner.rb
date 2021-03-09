@@ -41,7 +41,7 @@ module DiscourseCLI
       spinner.auto_spin
 
       begin
-        result = yield(spinner)
+        result = yield
         spinner.success
       rescue StandardError
         spinner.error
@@ -72,11 +72,10 @@ module DiscourseCLI
           )
         else
           TTY::Spinner.new(
-            ":spinner :title (:current / :max)",
+            ":spinner :title",
             success_mark: success_mark.green,
             error_mark: show_warning_instead_of_error ? error_mark.yellow : error_mark.red,
-            frames: TTY::Formats::FORMATS[:dots][:frames].map { |f| " #{f} " },
-            hide_cursor: true
+            frames: TTY::Formats::FORMATS[:dots][:frames].map { |f| " #{f} " }
           )
         end
       else
