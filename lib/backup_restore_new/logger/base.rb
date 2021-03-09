@@ -9,9 +9,14 @@ module BackupRestoreNew
     class Base
       def log_event(event); end
 
-      def log_task(message)
+      def log_task(message, with_progress: false)
         log(message)
-        yield
+
+        if with_progress
+          yield(BaseProgressLogger.new)
+        else
+          yield
+        end
       end
 
       def log(message, level: Logger::INFO)
@@ -24,6 +29,10 @@ module BackupRestoreNew
 
       def log_error(message, ex)
         log_with_exception(message, ex, Logger::ERROR)
+      end
+
+      def log_progress(current_progress)
+        raise NotImplementedError
       end
 
       protected

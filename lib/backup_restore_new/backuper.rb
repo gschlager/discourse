@@ -3,6 +3,7 @@
 require 'etc'
 require 'mini_tarball'
 require_relative 'backup/database_dumper'
+require_relative 'backup/upload_backuper'
 
 module BackupRestoreNew
   class Backuper
@@ -61,7 +62,7 @@ module BackupRestoreNew
 
     def create_backup
       MiniTarball::Writer.create(@backup_path) do |writer|
-        add_db_dump(writer)
+        # add_db_dump(writer)
         add_uploads(writer)
       end
     end
@@ -76,9 +77,9 @@ module BackupRestoreNew
     end
 
     def add_uploads(tar_writer)
-      log_task("Adding uploads") do
+      log_task("Adding uploads", with_progress: true) do |progress_logger|
         tar_writer.add_file_from_stream(name: BackupRestore::UPLOADS_FILE, **tar_file_attributes) do |output_stream|
-          backuper = UploadBackuper.new
+          backuper = UploadBackuper.new(progress_logger)
           backuper.compress_uploads(output_stream)
         end
       end

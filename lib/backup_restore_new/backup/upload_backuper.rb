@@ -4,7 +4,13 @@ require 'mini_tarball'
 
 module BackupRestoreNew
   class UploadBackuper
+    def initialize(progress_logger)
+      @progress_logger = progress_logger
+    end
+
     def compress_uploads(output_stream)
+      @progress_logger.max_progress = Upload.by_users.count
+
       uploads_gz = Zlib::GzipWriter.new(output_stream, SiteSetting.backup_gzip_compression_level_for_uploads)
       MiniTarball::Writer.use(uploads_gz) do |uploads_tar|
         add_uploaded_files(uploads_tar)
@@ -22,8 +28,10 @@ module BackupRestoreNew
         if File.exist?(absolute_path)
           tar_writer.add_file(name: relative_path, source_file_path: absolute_path)
         else
-          puts "Missing file: #{absolute_path}"
+          # puts "Missing file: #{absolute_path}"
         end
+
+        @progress_logger.increment
       end
     end
   end
