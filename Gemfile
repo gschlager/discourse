@@ -244,9 +244,12 @@ if ENV["IMPORT"] == "1"
 end
 
 gem 'webpush', require: false
-gem 'colored2', require: false
-gem 'tty-spinner', require: false
 gem 'maxminddb'
+
+# used by backup and restore
+gem 'colored2', require: false
 gem 'mini_tarball', require: false
+gem 'ruby-progressbar', require: false
+gem 'tty-spinner', require: false
 
 gem 'rails_failover', require: false

@@ -588,6 +588,7 @@ DEPENDENCIES
   rtlit
   rubocop-discourse
   ruby-prof
+  ruby-progressbar
   ruby-readability
   rubyzip
   sassc (= 2.0.1)
