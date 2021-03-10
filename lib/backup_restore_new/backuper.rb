@@ -3,8 +3,6 @@
 require 'etc'
 require 'mini_mime'
 require 'mini_tarball'
-require_relative 'backup/database_dumper'
-require_relative 'backup/upload_backuper'
 
 module BackupRestoreNew
   class Backuper
@@ -74,8 +72,8 @@ module BackupRestoreNew
     def add_db_dump(tar_writer)
       log_task("Creating database dump") do
         tar_writer.add_file_from_stream(name: BackupRestore::DUMP_FILE, **tar_file_attributes) do |output_stream|
-          dumper = DatabaseDumper.new
-          dumper.dump_public_schema(output_stream)
+          dumper = Backup::DatabaseDumper.new
+          dumper.dump_schema(output_stream)
         end
       end
     end
@@ -83,7 +81,7 @@ module BackupRestoreNew
     def add_uploads(tar_writer)
       log_task("Adding uploads", with_progress: true) do |progress_logger|
         tar_writer.add_file_from_stream(name: BackupRestore::UPLOADS_FILE, **tar_file_attributes) do |output_stream|
-          backuper = UploadBackuper.new(@tmp_directory, progress_logger)
+          backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
           backuper.compress_uploads(output_stream)
         end
       end
