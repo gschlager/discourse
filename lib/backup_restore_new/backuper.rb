@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'etc'
+require 'mini_mime'
 require 'mini_tarball'
 require_relative 'backup/database_dumper'
 require_relative 'backup/upload_backuper'
@@ -44,6 +45,7 @@ module BackupRestoreNew
     def initialize_backup
       log_task("Initializing backup") do
         @success = false
+        @store = BackupRestore::BackupStore.create
 
         timestamp = Time.now.utc.strftime("%Y-%m-%d-%H%M%S")
         current_db = RailsMultisite::ConnectionManagement.current_db
@@ -64,7 +66,7 @@ module BackupRestoreNew
 
     def create_backup
       MiniTarball::Writer.create(@backup_path) do |writer|
-        # add_db_dump(writer)
+        add_db_dump(writer)
         add_uploads(writer)
       end
     end
@@ -88,14 +90,21 @@ module BackupRestoreNew
     end
 
     def upload_backup
-      log_task("Uploading backup") do
+      return unless @store.remote?
 
+      file_size = File.size(@backup_path)
+      file_size = Object.new.extend(ActionView::Helpers::NumberHelper).number_to_human_size(file_size)
+
+      log_task("Uploading backup (#{file_size})") do
+        filename = File.basename(@backup_path)
+        content_type = MiniMime.lookup_by_filename(filename).content_type
+        @store.upload_file(@backup_filename, filename, content_type)
       end
     end
 
     def finalize_backup
       log_task("Finalizing backup") do
-
+        DiscourseEvent.trigger(:backup_created)
       end
     end
 
@@ -106,13 +115,23 @@ module BackupRestoreNew
     end
 
     def notify_user
-      log_task("Notifying user") do
+      return if @success && @user.id == Discourse::SYSTEM_USER_ID
 
+      log_task("Notifying user") do
+        status = @success ? :backup_succeeded : :backup_failed
+
+        post = SystemMessage.create_from_system_user(
+          @user, status, logs: Discourse::Utils.pretty_logs(@logs)
+        )
+
+        if @user.id == Discourse::SYSTEM_USER_ID
+          post.topic.invite_group(@user, Group[:admins])
+        end
       end
     end
 
     def tar_file_attributes
-      {
+      @tar_file_attributes ||= {
         uid: Process.uid,
         gid: Process.gid,
         uname: Etc.getpwuid(Process.uid).name,
