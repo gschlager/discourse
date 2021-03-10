@@ -119,9 +119,8 @@ module BackupRestoreNew
 
       log_task("Notifying user") do
         status = @success ? :backup_succeeded : :backup_failed
-
         post = SystemMessage.create_from_system_user(
-          @user, status, logs: Discourse::Utils.pretty_logs(@logs)
+          @user, status, logs: Discourse::Utils.pretty_logs(@logger.logs)
         )
 
         if @user.id == Discourse::SYSTEM_USER_ID
