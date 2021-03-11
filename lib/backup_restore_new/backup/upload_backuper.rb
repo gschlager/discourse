@@ -46,7 +46,7 @@ module BackupRestoreNew
         relative_path = base_store.get_path_for_upload(upload)
 
         if is_local_upload
-          absolute_path = File.join(Rails.root, "public", store.get_path_for_upload(upload))
+          absolute_path = File.join(upload_path_prefix, relative_path)
         else
           absolute_path = File.join(@tmp_directory, upload.sha1)
 
@@ -73,6 +73,10 @@ module BackupRestoreNew
 
       def base_store
         @base_store ||= FileStore::BaseStore.new
+      end
+
+      def upload_path_prefix
+        @upload_path_prefix ||= File.join(Rails.root, "public", base_store.upload_path)
       end
 
       def log_error(message, ex = nil)
