@@ -142,13 +142,7 @@ describe BackupRestore::UploadsRestorer do
         post.link_post_uploads
 
         FileHelper.stubs(:download).returns(file_from_fixtures("logo.png"))
-        FileStore::S3Store.any_instance.stubs(:store_upload).returns do
-          File.join(
-            "//s3-upload-bucket.s3.dualstack.us-east-1.amazonaws.com",
-            target_site_type == multisite ? "/uploads/#{target_site_name}" : "",
-            "original/1X/bc975735dfc6409c1c2aa5ebf2239949bcbdbd65.png"
-          )
-        end
+        FileStore::S3Store.any_instance.stubs(:store_upload).returns(nil)
         UserAvatar.import_url_for_user("logo.png", Fabricate(:user))
       end
 
