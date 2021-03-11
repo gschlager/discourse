@@ -43,12 +43,10 @@ module BackupRestoreNew
       def paths_of(upload)
         is_local_upload = upload.local?
         store = store_for(is_local_upload)
-
-        relative_path = store.get_path_for_upload(upload)
-        relative_path.delete_prefix!("/")
+        relative_path = base_store.get_path_for_upload(upload)
 
         if is_local_upload
-          absolute_path = File.join(Rails.root, "public", relative_path)
+          absolute_path = File.join(Rails.root, "public", store.get_path_for_upload(upload))
         else
           absolute_path = File.join(@tmp_directory, upload.sha1)
 
@@ -71,6 +69,10 @@ module BackupRestoreNew
         else
           @s3_store ||= FileStore::S3Store.new
         end
+      end
+
+      def base_store
+        @base_store ||= FileStore::BaseStore.new
       end
 
       def log_error(message, ex = nil)
