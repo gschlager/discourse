@@ -51,8 +51,8 @@ module BackupRestoreNew
           absolute_path = File.join(@tmp_directory, upload.sha1)
 
           begin
-            store.download_file(upload, filename)
-          rescue StandardError => ex
+            store.download_file(upload, absolute_path)
+          rescue => ex
             absolute_path = nil
             log_error("Failed to download file with upload ID #{upload.id} from S3", ex)
           end

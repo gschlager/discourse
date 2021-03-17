@@ -72,7 +72,7 @@ describe BackupRestoreNew::Backup::UploadBackuper do
   context "S3 uploads" do
     before do
       setup_s3
-      FileStore::S3Store.any_instance.stubs(:store_upload).returns("foo")
+      stub_s3_store
     end
 
     subject { described_class.new("/tmp", BackupRestoreNew::Logger::BaseProgressLogger.new) }

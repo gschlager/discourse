@@ -254,7 +254,7 @@ module BackupRestore
         begin
           FileUtils.mkdir_p(File.dirname(filename))
           store.download_file(upload, filename)
-        rescue StandardError => ex
+        rescue => ex
           log "Failed to download file with upload ID #{upload.id} from S3", ex
         end
 

@@ -25,7 +25,7 @@ module BackupRestoreNew
       finalize_backup
     rescue SystemExit, SignalException
       log_warning "Backup operation was canceled!"
-    rescue StandardError => ex
+    rescue => ex
       log_error "Backup failed!", ex
     else
       @success = true
