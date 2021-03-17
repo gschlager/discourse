@@ -23,42 +23,44 @@ module UploadsHelpers
     stub_request(:put, url)
   end
 
-  def stub_s3_store
+  def stub_s3_store(stub_s3_responses: false)
     store = FileStore::S3Store.new
     client = Aws::S3::Client.new(stub_responses: true)
     store.s3_helper.stubs(:s3_client).returns(client)
     Discourse.stubs(:store).returns(store)
     FileStore::S3Store.stubs(:new).returns(store)
 
-    @s3_objects = {}
+    if stub_s3_responses
+      @s3_objects = {}
 
-    client.stub_responses(:put_object, -> (context) do
-      body = context.params[:body].read
+      client.stub_responses(:put_object, -> (context) do
+        body = context.params[:body].read
 
-      @s3_objects[context.params[:key]] = {
-        body: body,
-        size: body.bytesize,
-        last_modified: Time.zone.now
-      }
-      { etag: Digest::MD5.hexdigest(body) }
-    end)
+        @s3_objects[context.params[:key]] = {
+          body: body,
+          size: body.bytesize,
+          last_modified: Time.zone.now
+        }
+        { etag: Digest::MD5.hexdigest(body) }
+      end)
 
-    client.stub_responses(:head_object, -> (context) do
-      if object = @s3_objects[context.params[:key]]
-        { content_length: object[:size], last_modified: object[:last_modified] }
-      else
-        { status_code: 404, headers: {}, body: "", }
-      end
-    end)
+      client.stub_responses(:head_object, -> (context) do
+        if object = @s3_objects[context.params[:key]]
+          { content_length: object[:size], last_modified: object[:last_modified] }
+        else
+          { status_code: 404, headers: {}, body: "", }
+        end
+      end)
 
-    client.stub_responses(:get_object, -> (context) do
-      if object = @s3_objects[context.params[:key]]
-        { content_length: object[:size], body: object[:body] }
-      else
-        { status_code: 404, headers: {}, body: "" }
-      end
-    end)
+      client.stub_responses(:get_object, -> (context) do
+        if object = @s3_objects[context.params[:key]]
+          { content_length: object[:size], body: object[:body] }
+        else
+          { status_code: 404, headers: {}, body: "" }
+        end
+      end)
 
-    client
+      client
+    end
   end
 end

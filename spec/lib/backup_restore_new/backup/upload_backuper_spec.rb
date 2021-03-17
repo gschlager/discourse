@@ -6,16 +6,15 @@ require 'rubygems/package'
 describe BackupRestoreNew::Backup::UploadBackuper do
   fab!(:user) { Fabricate(:user) }
   let(:io) { StringIO.new }
-  let(:s3_upload_url) { "//#{SiteSetting.s3_upload_bucket}.s3.#{SiteSetting.s3_region}.amazonaws.com/original/1X" }
+
+  before do
+    SiteSetting.authorized_extensions = 'png|pdf'
+  end
 
   def create_uploads(fixtures)
     uploads = fixtures.map do |filename, file|
       upload = UploadCreator.new(file, filename).create_for(user.id)
       raise "invalid upload" if upload.errors.present?
-
-      if SiteSetting.enable_s3_uploads
-        upload.update!(url: "#{s3_upload_url}/#{upload.sha1}.#{upload.extension}")
-      end
 
       upload
     end
@@ -49,48 +48,43 @@ describe BackupRestoreNew::Backup::UploadBackuper do
     [paths, files]
   end
 
-  context "local uploads" do
-    subject { described_class.new("", BackupRestoreNew::Logger::BaseProgressLogger.new) }
-
-    it "works" do
-      SiteSetting.authorized_extensions = 'png|pdf'
+  shared_examples "compression and error logging" do
+    it "compresses existing files and logs missing files" do
+      missing_upload1 = Fabricate(:upload)
 
       upload_paths, uploaded_files = create_uploads(
         "logo.png" => file_from_fixtures("smallest.png"),
         "some.pdf" => file_from_fixtures("small.pdf", "pdf")
       )
 
+      missing_upload2 = Fabricate(:upload)
+
       subject.compress_uploads(io)
       uncompressed_paths, uncompressed_files = uncompress
 
       expect(uncompressed_paths).to eq(upload_paths)
       expect(uncompressed_files).to eq(uploaded_files)
-      expect(subject.errors).to be_blank
+
+      expect(subject.errors.size).to eq(2)
+      expect(subject.errors[0][:message]).to include("ID #{missing_upload1.id}")
+      expect(subject.errors[1][:message]).to include("ID #{missing_upload2.id}")
     end
+  end
+
+  context "local uploads" do
+    subject { described_class.new("", BackupRestoreNew::Logger::BaseProgressLogger.new) }
+
+    include_examples "compression and error logging"
   end
 
   context "S3 uploads" do
     before do
       setup_s3
-      stub_s3_store
+      stub_s3_store(stub_s3_responses: true)
     end
 
     subject { described_class.new("/tmp", BackupRestoreNew::Logger::BaseProgressLogger.new) }
 
-    it "works" do
-      SiteSetting.authorized_extensions = 'png|pdf'
-
-      upload_paths, uploaded_files = create_uploads(
-        "logo.png" => file_from_fixtures("smallest.png"),
-        "some.pdf" => file_from_fixtures("small.pdf", "pdf")
-      )
-
-      subject.compress_uploads(io)
-      uncompressed_paths, uncompressed_files = uncompress
-
-      expect(uncompressed_paths).to eq(upload_paths)
-      expect(uncompressed_files).to eq(uploaded_files)
-      expect(subject.errors).to be_blank
-    end
+    include_examples "compression and error logging"
   end
 end
