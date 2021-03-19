@@ -42,7 +42,6 @@ module BackupRestoreNew
 
       def paths_of(upload)
         is_local_upload = upload.local?
-        store = store_for(is_local_upload)
         relative_path = base_store.get_path_for_upload(upload)
 
         if is_local_upload
@@ -51,7 +50,7 @@ module BackupRestoreNew
           absolute_path = File.join(@tmp_directory, upload.sha1)
 
           begin
-            store.download_file(upload, absolute_path)
+            s3_store.download_file(upload, absolute_path)
           rescue => ex
             absolute_path = nil
             log_error("Failed to download file with upload ID #{upload.id} from S3", ex)
@@ -63,16 +62,12 @@ module BackupRestoreNew
         FileUtils.rm_f(absolute_path) if !is_local_upload && absolute_path
       end
 
-      def store_for(is_local_upload)
-        if is_local_upload
-          @local_store ||= FileStore::LocalStore.new
-        else
-          @s3_store ||= FileStore::S3Store.new
-        end
-      end
-
       def base_store
         @base_store ||= FileStore::BaseStore.new
+      end
+
+      def s3_store
+        @s3_store ||= FileStore::S3Store.new
       end
 
       def upload_path_prefix
