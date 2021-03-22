@@ -34,6 +34,7 @@ describe BackupRestoreNew::Backup::DatabaseDumper do
     end
 
     context "with real pg_dump" do
+      # before(:context) and after(:context) runs outside of transaction
       before(:context) do
         DB.exec(<<~SQL)
           CREATE SCHEMA backup_test;

@@ -12,7 +12,7 @@ module DiscourseCLI
 
       backuper = BackupRestoreNew::Backuper.new(
         Discourse::SYSTEM_USER_ID,
-        BackupRestoreLogger.new
+        BackupRestoreNew::Factory.new(BackupRestoreLogger.new)
       )
       backuper.run
 
