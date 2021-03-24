@@ -9,10 +9,9 @@ module BackupRestoreNew
     delegate :log, :log_event, :log_task, :log_warning, :log_error, to: :@logger, private: true
     attr_reader :success
 
-    def initialize(user_id, factory, filename: nil)
+    def initialize(user_id, logger, filename: nil)
       @user = User.find_by(id: user_id) || Discourse.system_user
-      @factory = factory
-      @logger = factory.logger
+      @logger = logger
       @filename_override = filename
     end
 
@@ -73,7 +72,7 @@ module BackupRestoreNew
     def add_db_dump(tar_writer)
       log_task("Creating database dump") do
         tar_writer.add_file_from_stream(name: BackupRestore::DUMP_FILE, **tar_file_attributes) do |output_stream|
-          dumper = @factory.create_database_dumper
+          dumper = Backup::DatabaseDumper.new
           dumper.dump_schema(output_stream)
         end
       end
@@ -82,7 +81,7 @@ module BackupRestoreNew
     def add_uploads(tar_writer)
       log_task("Adding uploads", with_progress: true) do |progress_logger|
         tar_writer.add_file_from_stream(name: BackupRestore::UPLOADS_FILE, **tar_file_attributes) do |output_stream|
-          backuper = @factory.create_upload_backuper(@tmp_directory, progress_logger)
+          backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
           backuper.compress_uploads(output_stream)
         end
       end

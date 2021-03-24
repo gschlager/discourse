@@ -7,6 +7,12 @@ module BackupRestoreNew
     ERROR = :error
 
     class Base
+      attr_reader :logs
+
+      def initialize
+        @logs = []
+      end
+
       def log_event(event); end
 
       def log_task(message, with_progress: false)
