@@ -3,6 +3,13 @@
 module HasUrl
   extend ActiveSupport::Concern
 
+  REMOTE_URL_SQL = "url LIKE '//%' OR url LIKE 'https://%' OR url LIKE 'http://%'"
+
+  included do
+    scope :remote, -> { where(REMOTE_URL_SQL) }
+    scope :local, -> { where("NOT (#{REMOTE_URL_SQL})") }
+  end
+
   class_methods do
     def extract_url(url)
       url.match(self::URL_REGEX)

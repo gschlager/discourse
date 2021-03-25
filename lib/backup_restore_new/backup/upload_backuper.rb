@@ -7,6 +7,16 @@ module BackupRestoreNew
     class UploadBackuper
       attr_reader :errors
 
+      def self.include_original_files?
+        Upload.exists?(Upload.by_users.local) ||
+          (SiteSetting.include_s3_uploads_in_backups && Upload.exists?(Upload.by_users.remote))
+      end
+
+      def self.include_optimized_files?
+        # never include optimized images stored on S3
+        SiteSetting.include_thumbnails_in_backups && OptimizedImage.exists?(OptimizedImage.by_users.local)
+      end
+
       def initialize(tmp_directory, progress_logger)
         @tmp_directory = tmp_directory
         @progress_logger = progress_logger
