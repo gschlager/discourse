@@ -65,7 +65,8 @@ module BackupRestoreNew
     def create_backup
       MiniTarball::Writer.create(@backup_path) do |writer|
         add_db_dump(writer)
-        add_uploads(writer)
+        add_original_uploads(writer)
+        add_optimized_uploads(writer)
       end
     end
 
@@ -78,11 +79,20 @@ module BackupRestoreNew
       end
     end
 
-    def add_uploads(tar_writer)
+    def add_original_uploads(tar_writer)
       log_task("Adding uploads", with_progress: true) do |progress_logger|
-        tar_writer.add_file_from_stream(name: BackupRestore::UPLOADS_FILE, **tar_file_attributes) do |output_stream|
+        tar_writer.add_file_from_stream(name: BackupRestore::ORIGINAL_UPLOADS_FILE, **tar_file_attributes) do |output_stream|
           backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
-          backuper.compress_uploads(output_stream)
+          backuper.compress_original_files(output_stream)
+        end
+      end
+    end
+
+    def add_optimized_uploads(tar_writer)
+      log_task("Adding optimized uploads", with_progress: true) do |progress_logger|
+        tar_writer.add_file_from_stream(name: BackupRestore::OPTIMIZED_UPLOADS_FILE, **tar_file_attributes) do |output_stream|
+          backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
+          backuper.compress_optimized_files(output_stream)
         end
       end
     end

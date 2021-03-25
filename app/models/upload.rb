@@ -55,6 +55,8 @@ class Upload < ActiveRecord::Base
   end
 
   scope :by_users, -> { where("uploads.id > ?", SEEDED_ID_THRESHOLD) }
+  scope :remote, -> { where("url LIKE '//%' OR url LIKE 'https://%' OR url LIKE 'http://%'") }
+  scope :local, -> { where.not("url LIKE '//%' OR url LIKE 'https://%' OR url LIKE 'http://%'") }
 
   def self.verification_statuses
     @verification_statuses ||= Enum.new(

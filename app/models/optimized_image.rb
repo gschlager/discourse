@@ -8,6 +8,8 @@ class OptimizedImage < ActiveRecord::Base
   VERSION = 2
   URL_REGEX ||= /(\/optimized\/\dX[\/\.\w]*\/([a-zA-Z0-9]+)[\.\w]*)/
 
+  scope :by_users, -> { where("upload_id > ?", Upload::SEEDED_ID_THRESHOLD) }
+
   def self.lock(upload_id, width, height)
     @hostname ||= Discourse.os_hostname
     # note, the extra lock here ensures we only optimize one image per machine on webs

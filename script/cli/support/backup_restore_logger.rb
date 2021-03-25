@@ -44,11 +44,15 @@ module DiscourseCLI
   class BackupRestoreProgressLogger < BackupRestoreNew::Logger::BaseProgressLogger
     def initialize(message)
       @message = message
-      @progressbar = ProgressBar.create(format: '%t | %c / %C | %E', title: " ⠒  #{message}", autofinish: false)
     end
 
-    def max_progress=(value)
-      @progressbar.total = value
+    def start(max_value)
+      @progressbar = ProgressBar.create(
+        format: '%t | %c / %C | %E',
+        title: " ⠒  #{message}",
+        total: max_value,
+        autofinish: false
+      )
     end
 
     def increment
