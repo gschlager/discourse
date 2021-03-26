@@ -37,10 +37,6 @@ module BackupRestoreNew
         log_with_exception(message, ex, Logger::ERROR)
       end
 
-      def log_progress(current_progress)
-        raise NotImplementedError
-      end
-
       protected
 
       def create_timestamp

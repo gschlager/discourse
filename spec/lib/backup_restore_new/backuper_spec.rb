@@ -7,7 +7,6 @@ describe BackupRestoreNew::Backuper do
   let!(:logger) do
     Class.new(BackupRestoreNew::Logger::Base) do
       def log(message, level: nil); end
-      def log_progress(current_progress); end
     end.new
   end
 

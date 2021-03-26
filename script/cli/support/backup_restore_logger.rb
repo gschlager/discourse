@@ -35,10 +35,6 @@ module DiscourseCLI
 
       puts message
     end
-
-    def log_progress(current_progress)
-      @progressbar
-    end
   end
 
   class BackupRestoreProgressLogger < BackupRestoreNew::Logger::BaseProgressLogger
@@ -57,6 +53,10 @@ module DiscourseCLI
 
     def increment
       @progressbar.increment
+    end
+
+    def log(message, ex = nil)
+      # write to log file
     end
 
     def success

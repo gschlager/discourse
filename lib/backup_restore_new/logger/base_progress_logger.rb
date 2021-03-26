@@ -5,6 +5,7 @@ module BackupRestoreNew
     class BaseProgressLogger
       def start(max_value); end
       def increment; end
+      def log(message, ex = nil); end
     end
   end
 end
