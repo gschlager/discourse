@@ -58,7 +58,10 @@ describe BackupRestoreNew::Backup::UploadBackuper do
     end
 
     context "with uploads by users stored on S3" do
-      before { Fabricate(:upload_s3) }
+      before do
+        setup_s3
+        Fabricate(:upload_s3)
+      end
 
       it "returns true when include_s3_uploads_in_backups is enabled" do
         SiteSetting.include_s3_uploads_in_backups = true
@@ -99,6 +102,10 @@ describe BackupRestoreNew::Backup::UploadBackuper do
   end
 
   describe "#compress_original_files" do
+    before { @tmp_directory = Dir.mktmpdir }
+    after { FileUtils.rm_rf(@tmp_directory) }
+    subject { described_class.new(@tmp_directory, BackupRestoreNew::Logger::BaseProgressLogger.new) }
+
     shared_examples "compression and error logging" do
       it "compresses existing files and logs missing files" do
         io = StringIO.new
@@ -121,7 +128,6 @@ describe BackupRestoreNew::Backup::UploadBackuper do
     end
 
     context "local uploads" do
-      subject { described_class.new("", BackupRestoreNew::Logger::BaseProgressLogger.new) }
       let!(:upload_type) { :upload }
 
       include_examples "compression and error logging"
@@ -133,15 +139,12 @@ describe BackupRestoreNew::Backup::UploadBackuper do
         stub_s3_store(stub_s3_responses: true)
       end
 
-      subject { described_class.new(Dir.mktmpdir, BackupRestoreNew::Logger::BaseProgressLogger.new) }
       let!(:upload_type) { :upload_s3 }
 
       include_examples "compression and error logging"
     end
 
     context "mixed uploads" do
-      subject { described_class.new(Dir.mktmpdir, BackupRestoreNew::Logger::BaseProgressLogger.new) }
-
       it "compresses existing files and logs missing files" do
         local_upload_paths, local_uploaded_files = create_uploads(
           "logo.png" => file_from_fixtures("smallest.png")
@@ -171,6 +174,23 @@ describe BackupRestoreNew::Backup::UploadBackuper do
         expect(uncompressed_files).to eq(uploaded_files)
         expect(failed_ids).to be_blank
       end
+    end
+  end
+
+  describe "#add_optimized_files" do
+    subject { described_class.new(Dir.mktmpdir, BackupRestoreNew::Logger::BaseProgressLogger.new) }
+
+    it "doesn't include optimized images stored on S3" do
+      setup_s3
+      Fabricate(:optimized_image)
+
+      io = StringIO.new
+      failed_ids = subject.compress_optimized_files(io)
+      uncompressed_paths, uncompressed_files = uncompress(io)
+
+      expect(uncompressed_paths).to be_blank
+      expect(uncompressed_files).to be_blank
+      expect(failed_ids).to be_blank
     end
   end
 end
