@@ -80,21 +80,29 @@ module BackupRestoreNew
     end
 
     def add_original_uploads(tar_writer)
+      error_count = 0
+
       log_task("Adding uploads", with_progress: true) do |progress_logger|
         tar_writer.add_file_from_stream(name: BackupRestore::ORIGINAL_UPLOADS_FILE, **tar_file_attributes) do |output_stream|
           backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
-          backuper.compress_original_files(output_stream)
+          error_count = backuper.compress_original_files(output_stream).count
         end
       end
+
+      log_warning "Failed to add #{error_count} uploads. See logfile for details." if error_count > 0
     end
 
     def add_optimized_uploads(tar_writer)
-      log_task("Adding optimized uploads", with_progress: true) do |progress_logger|
+      error_count = 0
+
+      log_task("Adding optimized images", with_progress: true) do |progress_logger|
         tar_writer.add_file_from_stream(name: BackupRestore::OPTIMIZED_UPLOADS_FILE, **tar_file_attributes) do |output_stream|
           backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
-          backuper.compress_optimized_files(output_stream)
+          error_count = backuper.compress_optimized_files(output_stream).count
         end
       end
+
+      log_warning "Failed to add #{error_count} optimized images. See logfile for details." if error_count > 0
     end
 
     def upload_backup

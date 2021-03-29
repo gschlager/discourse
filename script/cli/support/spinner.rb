@@ -61,8 +61,8 @@ module DiscourseCLI
 
     def create_spinner(show_warning_instead_of_error:)
       output = $stderr
-      success_mark = " ✓ ".bold
-      error_mark = show_warning_instead_of_error ? " ⚠ ".bold : " ✘ ".bold
+      success_mark = " ✓ "
+      error_mark = show_warning_instead_of_error ? " ⚠ " : " ✘ "
 
       if output.tty?
         if ENV['RM_INFO']
