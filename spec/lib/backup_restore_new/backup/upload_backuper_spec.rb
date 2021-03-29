@@ -4,15 +4,13 @@ require 'rails_helper'
 require 'rubygems/package'
 
 describe BackupRestoreNew::Backup::UploadBackuper do
-  fab!(:user) { Fabricate(:user) }
-
   before do
     SiteSetting.authorized_extensions = 'png|pdf'
   end
 
   def create_uploads(fixtures)
     uploads = fixtures.map do |filename, file|
-      upload = UploadCreator.new(file, filename).create_for(user.id)
+      upload = UploadCreator.new(file, filename).create_for(Discourse::SYSTEM_USER_ID)
       raise "invalid upload" if upload.errors.present?
       upload
     end
@@ -20,6 +18,27 @@ describe BackupRestoreNew::Backup::UploadBackuper do
     paths = uploads.map { |upload| "original/1X/#{upload.sha1}.#{upload.extension}" }
     files = fixtures.values.map { |file| File.open(file.path, "rb").read }
     [paths, files]
+  end
+
+  def create_optimized_images(fixtures)
+    store = Discourse.store
+
+    fixtures.map do |filename, file|
+      upload = UploadCreator.new(file, filename).create_for(Discourse::SYSTEM_USER_ID)
+      raise "invalid upload" if upload.errors.present?
+
+      optimized_image = OptimizedImage.create_for(upload, 10, 10)
+      prefixed_path = store.get_path_for_optimized_image(optimized_image)
+      path = prefixed_path.delete_prefix("/#{store.upload_path}/")
+
+      file = if SiteSetting.enable_s3_uploads
+        @s3_objects[path][:body]
+      else
+        File.open(File.join(store.public_dir, prefixed_path), "rb").read
+      end
+
+      [path, file]
+    end.transpose
   end
 
   def uncompress(io)
@@ -112,8 +131,8 @@ describe BackupRestoreNew::Backup::UploadBackuper do
         missing_upload1 = Fabricate(upload_type)
 
         upload_paths, uploaded_files = create_uploads(
-          "logo.png" => file_from_fixtures("smallest.png"),
-          "some.pdf" => file_from_fixtures("small.pdf", "pdf")
+          "smallest.png" => file_from_fixtures("smallest.png"),
+          "small.pdf" => file_from_fixtures("small.pdf", "pdf")
         )
 
         missing_upload2 = Fabricate(upload_type)
@@ -147,12 +166,12 @@ describe BackupRestoreNew::Backup::UploadBackuper do
     context "mixed uploads" do
       it "compresses existing files and logs missing files" do
         local_upload_paths, local_uploaded_files = create_uploads(
-          "logo.png" => file_from_fixtures("smallest.png")
+          "smallest.png" => file_from_fixtures("smallest.png")
         )
         setup_s3
         stub_s3_store(stub_s3_responses: true)
         s3_upload_paths, s3_uploaded_files = create_uploads(
-          "some.pdf" => file_from_fixtures("small.pdf", "pdf")
+          "small.pdf" => file_from_fixtures("small.pdf", "pdf")
         )
         upload_paths = local_upload_paths + s3_upload_paths
         uploaded_files = local_uploaded_files + s3_uploaded_files
@@ -180,9 +199,33 @@ describe BackupRestoreNew::Backup::UploadBackuper do
   describe "#add_optimized_files" do
     subject { described_class.new(Dir.mktmpdir, BackupRestoreNew::Logger::BaseProgressLogger.new) }
 
+    it "includes optimized images stored locally" do
+      missing_image1 = Fabricate(:optimized_image)
+
+      optimized_paths, optimized_files = create_optimized_images(
+        "smallest.png" => file_from_fixtures("smallest.png"),
+        "logo.png" => file_from_fixtures("logo.png")
+      )
+
+      missing_image2 = Fabricate(:optimized_image)
+
+      io = StringIO.new
+      failed_ids = subject.compress_optimized_files(io)
+      uncompressed_paths, uncompressed_files = uncompress(io)
+
+      expect(uncompressed_paths).to eq(optimized_paths)
+      expect(uncompressed_files).to eq(optimized_files)
+      expect(failed_ids).to contain_exactly(missing_image1.id, missing_image2.id)
+    end
+
     it "doesn't include optimized images stored on S3" do
       setup_s3
-      Fabricate(:optimized_image)
+      stub_s3_store(stub_s3_responses: true)
+
+      create_optimized_images(
+        "smallest.png" => file_from_fixtures("smallest.png"),
+        "logo.png" => file_from_fixtures("logo.png")
+      )
 
       io = StringIO.new
       failed_ids = subject.compress_optimized_files(io)
