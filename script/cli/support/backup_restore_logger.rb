@@ -50,22 +50,24 @@ module DiscourseCLI
     def log_to_stdout(message, level = BackupRestoreNew::Logger::INFO)
       case level
       when BackupRestoreNew::Logger::INFO
-        puts " 🛈  ".white + message
+        puts " INFO ".black.on.blue + " #{message}"
       when BackupRestoreNew::Logger::ERROR
-        puts " ✘  ".red + message.red
+        puts " FAIL ".white.on.red + " #{message}"
       when BackupRestoreNew::Logger::WARNING
-        puts " ⚠  ".yellow + message
+        puts " WARN ".white.on.yellow + " #{message}"
+      else
+        puts message
       end
     end
 
     def log_to_logfile(message, level = BackupRestoreNew::Logger::INFO)
       case level
       when BackupRestoreNew::Logger::INFO
-        @logfile.puts("INFO: " + message)
+        @logfile.puts("INFO: #{message}")
       when BackupRestoreNew::Logger::ERROR
-        @logfile.puts("ERROR: " + message.red)
+        @logfile.puts("ERROR: #{message}")
       when BackupRestoreNew::Logger::WARNING
-        @logfile.puts("WARN: " + message)
+        @logfile.puts("WARN: #{message}")
       else
         @logfile.puts(message)
       end
@@ -78,8 +80,8 @@ module DiscourseCLI
       @logger = logger
 
       @progressbar = ProgressBar.create(
-        format: '%t | %c / %C | %E',
-        title: " ❯  #{@message}",
+        format: " %j%%  %t | %c / %C | %E",
+        title: @message,
         autofinish: false
       )
     end
@@ -105,12 +107,14 @@ module DiscourseCLI
     end
 
     def success
-      @progressbar.title = " ✓  ".green + @message
+      @progressbar.format = "%t | %c / %C | %E"
+      @progressbar.title = " DONE ".black.on.green + " #{@message}"
       @progressbar.finish
     end
 
     def error
-      @progressbar.title = " ✘  ".red + @message
+      @progressbar.format = "%t | %c / %C | %E"
+      @progressbar.title = " FAIL ".white.on.red + " #{@message}"
       @progressbar.finish
     end
 
