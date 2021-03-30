@@ -73,8 +73,8 @@ module DiscourseCLI
         else
           TTY::Spinner.new(
             ":spinner :title",
-            success_mark: " DONE ".bold.green,
-            error_mark: show_warning_instead_of_error ? " WARN ".bold.yellow : " FAIL ".bold.red,
+            success_mark: " DONE ".green,
+            error_mark: show_warning_instead_of_error ? " WARN ".yellow : " FAIL ".red,
             interval: 10,
             frames: [
               " ●    ",
