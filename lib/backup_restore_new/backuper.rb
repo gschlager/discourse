@@ -67,6 +67,7 @@ module BackupRestoreNew
         add_db_dump(writer)
         add_original_uploads(writer)
         add_optimized_uploads(writer)
+        add_metadata(writer)
       end
     end
 
@@ -103,6 +104,14 @@ module BackupRestoreNew
       end
 
       log_warning "Failed to add #{error_count} optimized images. See logfile for details." if error_count > 0
+    end
+
+    def add_metadata(tar_writer)
+      log_task("Adding metadata file") do
+        tar_writer.add_file_from_stream(name: BackupRestore::METADATA_FILE, **tar_file_attributes) do |output_stream|
+          Backup::MetadataWriter.new.write(output_stream)
+        end
+      end
     end
 
     def upload_backup

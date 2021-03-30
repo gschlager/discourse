@@ -8,6 +8,7 @@ module BackupRestore
   DUMP_FILE = "dump.sql.gz"
   ORIGINAL_UPLOADS_FILE = "uploads-original.tar.gz"
   OPTIMIZED_UPLOADS_FILE = "uploads-optimized.tar.gz"
+  METADATA_FILE = "meta.json"
   LOGS_CHANNEL = "/admin/backups/logs"
 
   def self.backup!(user_id, opts = {})
