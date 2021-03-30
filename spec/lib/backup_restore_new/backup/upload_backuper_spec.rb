@@ -120,7 +120,7 @@ describe BackupRestoreNew::Backup::UploadBackuper do
     end
   end
 
-  describe "#compress_original_files" do
+  describe "#compress_uploads" do
     before { @tmp_directory = Dir.mktmpdir }
     after { FileUtils.rm_rf(@tmp_directory) }
     subject { described_class.new(@tmp_directory, BackupRestoreNew::Logger::BaseProgressLogger.new) }
@@ -137,12 +137,13 @@ describe BackupRestoreNew::Backup::UploadBackuper do
 
         missing_upload2 = Fabricate(upload_type)
 
-        result = subject.compress_original_files(io)
+        result = subject.compress_uploads(io)
         uncompressed_paths, uncompressed_files = uncompress(io)
 
         expect(uncompressed_paths).to eq(upload_paths)
         expect(uncompressed_files).to eq(uploaded_files)
-        expect(result[:count]).to eq(2)
+        expect(result[:total_count]).to eq(4)
+        expect(result[:included_count]).to eq(2)
         expect(result[:failed_ids]).to contain_exactly(missing_upload1.id, missing_upload2.id)
       end
     end
@@ -178,22 +179,24 @@ describe BackupRestoreNew::Backup::UploadBackuper do
         uploaded_files = local_uploaded_files + s3_uploaded_files
 
         io = StringIO.new
-        result = subject.compress_original_files(io)
+        result = subject.compress_uploads(io)
         uncompressed_paths, uncompressed_files = uncompress(io)
 
         expect(uncompressed_paths).to eq(upload_paths)
         expect(uncompressed_files).to eq(uploaded_files)
-        expect(result[:count]).to eq(2)
+        expect(result[:total_count]).to eq(2)
+        expect(result[:included_count]).to eq(2)
         expect(result[:failed_ids]).to be_blank
 
         SiteSetting.enable_s3_uploads = false
         io = StringIO.new
-        result = subject.compress_original_files(io)
+        result = subject.compress_uploads(io)
         uncompressed_paths, uncompressed_files = uncompress(io)
 
         expect(uncompressed_paths).to eq(upload_paths)
         expect(uncompressed_files).to eq(uploaded_files)
-        expect(result[:count]).to eq(2)
+        expect(result[:total_count]).to eq(2)
+        expect(result[:included_count]).to eq(2)
         expect(result[:failed_ids]).to be_blank
       end
     end
@@ -213,12 +216,13 @@ describe BackupRestoreNew::Backup::UploadBackuper do
       missing_image2 = Fabricate(:optimized_image)
 
       io = StringIO.new
-      result = subject.compress_optimized_files(io)
+      result = subject.compress_optimized_images(io)
       uncompressed_paths, uncompressed_files = uncompress(io)
 
       expect(uncompressed_paths).to eq(optimized_paths)
       expect(uncompressed_files).to eq(optimized_files)
-      expect(result[:count]).to eq(2)
+      expect(result[:total_count]).to eq(4)
+      expect(result[:included_count]).to eq(2)
       expect(result[:failed_ids]).to contain_exactly(missing_image1.id, missing_image2.id)
     end
 
@@ -232,12 +236,13 @@ describe BackupRestoreNew::Backup::UploadBackuper do
       )
 
       io = StringIO.new
-      result = subject.compress_optimized_files(io)
+      result = subject.compress_optimized_images(io)
       uncompressed_paths, uncompressed_files = uncompress(io)
 
       expect(uncompressed_paths).to be_blank
       expect(uncompressed_files).to be_blank
-      expect(result[:count]).to eq(0)
+      expect(result[:total_count]).to eq(2)
+      expect(result[:included_count]).to eq(0)
       expect(result[:failed_ids]).to be_blank
     end
   end

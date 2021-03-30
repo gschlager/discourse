@@ -6,7 +6,7 @@ require 'mini_tarball'
 
 module BackupRestoreNew
   class Backuper
-    delegate :log, :log_event, :log_task, :log_warning, :log_error, to: :@logger, private: true
+    delegate :log, :log_event, :log_step, :log_warning, :log_error, to: :@logger, private: true
     attr_reader :success
 
     def initialize(user_id, logger, filename: nil)
@@ -41,7 +41,7 @@ module BackupRestoreNew
     protected
 
     def initialize_backup
-      log_task("Initializing backup") do
+      log_step("Initializing backup") do
         @success = false
         @store = BackupRestore::BackupStore.create
 
@@ -65,14 +65,14 @@ module BackupRestoreNew
     def create_backup
       MiniTarball::Writer.create(@backup_path) do |writer|
         add_db_dump(writer)
-        add_original_uploads(writer)
-        add_optimized_uploads(writer)
+        add_uploads(writer)
+        add_optimized_images(writer)
         add_metadata(writer)
       end
     end
 
     def add_db_dump(tar_writer)
-      log_task("Creating database dump") do
+      log_step("Creating database dump") do
         tar_writer.add_file_from_stream(name: BackupRestore::DUMP_FILE, **tar_file_attributes) do |output_stream|
           dumper = Backup::DatabaseDumper.new
           dumper.dump_schema(output_stream)
@@ -80,32 +80,32 @@ module BackupRestoreNew
       end
     end
 
-    def add_original_uploads(tar_writer)
-      log_task("Adding uploads", with_progress: true) do |progress_logger|
-        tar_writer.add_file_from_stream(name: BackupRestore::ORIGINAL_UPLOADS_FILE, **tar_file_attributes) do |output_stream|
+    def add_uploads(tar_writer)
+      log_step("Adding uploads", with_progress: true) do |progress_logger|
+        tar_writer.add_file_from_stream(name: BackupRestore::UPLOADS_FILE, **tar_file_attributes) do |output_stream|
           backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
-          @backup_uploads_result = backuper.compress_original_files(output_stream)
+          @backup_uploads_result = backuper.compress_uploads(output_stream)
         end
       end
 
-      error_count = @backup_uploads_result[:failed_ids].count
+      error_count = @backup_uploads_result[:failed_ids].size
       log_warning "Failed to add #{error_count} uploads. See logfile for details." if error_count > 0
     end
 
-    def add_optimized_uploads(tar_writer)
-      log_task("Adding optimized images", with_progress: true) do |progress_logger|
-        tar_writer.add_file_from_stream(name: BackupRestore::OPTIMIZED_UPLOADS_FILE, **tar_file_attributes) do |output_stream|
+    def add_optimized_images(tar_writer)
+      log_step("Adding optimized images", with_progress: true) do |progress_logger|
+        tar_writer.add_file_from_stream(name: BackupRestore::OPTIMIZED_IMAGES_FILE, **tar_file_attributes) do |output_stream|
           backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
-          @backup_optimized_images_result = backuper.compress_optimized_files(output_stream)
+          @backup_optimized_images_result = backuper.compress_optimized_images(output_stream)
         end
       end
 
-      error_count = @backup_optimized_images_result[:failed_ids].count
+      error_count = @backup_optimized_images_result[:failed_ids].size
       log_warning "Failed to add #{error_count} optimized images. See logfile for details." if error_count > 0
     end
 
     def add_metadata(tar_writer)
-      log_task("Adding metadata file") do
+      log_step("Adding metadata file") do
         tar_writer.add_file_from_stream(name: BackupRestore::METADATA_FILE, **tar_file_attributes) do |output_stream|
           Backup::MetadataWriter.new(@backup_uploads_result, @backup_optimized_images_result).write(output_stream)
         end
@@ -118,7 +118,7 @@ module BackupRestoreNew
       file_size = File.size(@backup_path)
       file_size = Object.new.extend(ActionView::Helpers::NumberHelper).number_to_human_size(file_size)
 
-      log_task("Uploading backup (#{file_size})") do
+      log_step("Uploading backup (#{file_size})") do
         filename = File.basename(@backup_path)
         content_type = MiniMime.lookup_by_filename(filename).content_type
         @store.upload_file(@backup_filename, filename, content_type)
@@ -126,13 +126,13 @@ module BackupRestoreNew
     end
 
     def finalize_backup
-      log_task("Finalizing backup") do
+      log_step("Finalizing backup") do
         DiscourseEvent.trigger(:backup_created)
       end
     end
 
     def clean_up
-      log_task("Cleaning up") do
+      log_step("Cleaning up") do
 
       end
     end
@@ -140,7 +140,7 @@ module BackupRestoreNew
     def notify_user
       return if @success && @user.id == Discourse::SYSTEM_USER_ID
 
-      log_task("Notifying user") do
+      log_step("Notifying user") do
         status = @success ? :backup_succeeded : :backup_failed
         post = SystemMessage.create_from_system_user(
           @user, status, logs: Discourse::Utils.pretty_logs(@logger.logs)

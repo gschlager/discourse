@@ -6,8 +6,8 @@ module BackupRestore
 
   VERSION_PREFIX = "v"
   DUMP_FILE = "dump.sql.gz"
-  ORIGINAL_UPLOADS_FILE = "uploads-original.tar.gz"
-  OPTIMIZED_UPLOADS_FILE = "uploads-optimized.tar.gz"
+  UPLOADS_FILE = "uploads.tar.gz"
+  OPTIMIZED_IMAGES_FILE = "optimized-images.tar.gz"
   METADATA_FILE = "meta.json"
   LOGS_CHANNEL = "/admin/backups/logs"
 

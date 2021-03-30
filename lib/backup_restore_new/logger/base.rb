@@ -15,7 +15,7 @@ module BackupRestoreNew
 
       def log_event(event); end
 
-      def log_task(message, with_progress: false)
+      def log_step(message, with_progress: false)
         log(message)
 
         if with_progress

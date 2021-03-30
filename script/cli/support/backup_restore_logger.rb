@@ -24,7 +24,7 @@ module DiscourseCLI
       @logfile.close
     end
 
-    def log_task(message, with_progress: false)
+    def log_step(message, with_progress: false)
       if with_progress
         logger = BackupRestoreProgressLogger.new(message, self)
         begin

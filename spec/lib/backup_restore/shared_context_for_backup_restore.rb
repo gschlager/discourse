@@ -5,7 +5,7 @@ shared_context "shared stuff" do
     Class.new do
       def log(message, ex = nil); end
 
-      def log_task(message, fail_on_error: false)
+      def log_step(message, fail_on_error: false)
         yield
       end
 
