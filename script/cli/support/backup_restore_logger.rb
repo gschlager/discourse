@@ -50,11 +50,11 @@ module DiscourseCLI
     def log_to_stdout(message, level = BackupRestoreNew::Logger::INFO)
       case level
       when BackupRestoreNew::Logger::INFO
-        puts " INFO ".black.on.blue + " #{message}"
+        puts " INFO ".bold.blue + " #{message}"
       when BackupRestoreNew::Logger::ERROR
-        puts " FAIL ".white.on.red + " #{message}"
+        puts " FAIL ".bold.red + " #{message}"
       when BackupRestoreNew::Logger::WARNING
-        puts " WARN ".white.on.yellow + " #{message}"
+        puts " WARN ".bold.yellow + " #{message}"
       else
         puts message
       end
@@ -108,13 +108,13 @@ module DiscourseCLI
 
     def success
       @progressbar.format = "%t | %c / %C | %E"
-      @progressbar.title = " DONE ".black.on.green + " #{@message}"
+      @progressbar.title = " DONE ".bold.green + " #{@message}"
       @progressbar.finish
     end
 
     def error
       @progressbar.format = "%t | %c / %C | %E"
-      @progressbar.title = " FAIL ".white.on.red + " #{@message}"
+      @progressbar.title = " FAIL ".bold.red + " #{@message}"
       @progressbar.finish
     end
 
