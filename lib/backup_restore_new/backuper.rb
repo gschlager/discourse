@@ -84,11 +84,11 @@ module BackupRestoreNew
       log_task("Adding uploads", with_progress: true) do |progress_logger|
         tar_writer.add_file_from_stream(name: BackupRestore::ORIGINAL_UPLOADS_FILE, **tar_file_attributes) do |output_stream|
           backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
-          @upload_result = backuper.compress_original_files(output_stream)
+          @backup_uploads_result = backuper.compress_original_files(output_stream)
         end
       end
 
-      error_count = @upload_result[:failed_ids].count
+      error_count = @backup_uploads_result[:failed_ids].count
       log_warning "Failed to add #{error_count} uploads. See logfile for details." if error_count > 0
     end
 
@@ -96,18 +96,18 @@ module BackupRestoreNew
       log_task("Adding optimized images", with_progress: true) do |progress_logger|
         tar_writer.add_file_from_stream(name: BackupRestore::OPTIMIZED_UPLOADS_FILE, **tar_file_attributes) do |output_stream|
           backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
-          @optimized_image_result = backuper.compress_optimized_files(output_stream)
+          @backup_optimized_images_result = backuper.compress_optimized_files(output_stream)
         end
       end
 
-      error_count = @optimized_image_result[:failed_ids].count
+      error_count = @backup_optimized_images_result[:failed_ids].count
       log_warning "Failed to add #{error_count} optimized images. See logfile for details." if error_count > 0
     end
 
     def add_metadata(tar_writer)
       log_task("Adding metadata file") do
         tar_writer.add_file_from_stream(name: BackupRestore::METADATA_FILE, **tar_file_attributes) do |output_stream|
-          Backup::MetadataWriter.new(@upload_result, @optimized_image_result).write(output_stream)
+          Backup::MetadataWriter.new(@backup_uploads_result, @backup_optimized_images_result).write(output_stream)
         end
       end
     end

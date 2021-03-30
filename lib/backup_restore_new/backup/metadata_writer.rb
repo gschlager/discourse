@@ -5,9 +5,9 @@ require 'json'
 module BackupRestoreNew
   module Backup
     class MetadataWriter
-      def initialize(upload_result, optimized_image_result)
-        @upload_stats = result_to_stats(upload_result)
-        @optimized_image_stats = result_to_stats(optimized_image_result)
+      def initialize(uploads_result, optimized_images_result)
+        @upload_stats = result_to_stats(uploads_result)
+        @optimized_image_stats = result_to_stats(optimized_images_result)
       end
 
       def write(output_stream)
