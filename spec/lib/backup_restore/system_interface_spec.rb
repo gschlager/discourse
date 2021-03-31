@@ -40,18 +40,6 @@ describe BackupRestore::SystemInterface do
     end
   end
 
-  it "successfully marks operation as running and finished" do
-    expect(subject.is_operation_running?).to eq(false)
-
-    subject.mark_operation_as_running
-    expect(subject.is_operation_running?).to eq(true)
-
-    expect { subject.mark_operation_as_running }.to raise_error(BackupRestore::OperationRunningError)
-
-    subject.mark_operation_as_finished
-    expect(subject.is_operation_running?).to eq(false)
-  end
-
   describe "#listen_for_shutdown_signal" do
     before { subject.mark_operation_as_running }
 

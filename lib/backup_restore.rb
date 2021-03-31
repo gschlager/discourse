@@ -2,8 +2,6 @@
 
 module BackupRestore
 
-  class OperationRunningError < RuntimeError; end
-
   VERSION_PREFIX = "v"
   DUMP_FILE = "dump.sql.gz"
   UPLOADS_FILE = "uploads.tar.gz"

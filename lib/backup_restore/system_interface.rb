@@ -8,7 +8,6 @@ module BackupRestore
   end
 
   class SystemInterface
-    OPERATION_RUNNING_KEY = "backup_restore_operation_is_running"
     LOGS_MESSAGE_ID_KEY = "start_logs_message_id"
 
     delegate :log, to: :@logger, private: true
@@ -37,32 +36,6 @@ module BackupRestore
       Discourse.disable_readonly_mode
     rescue => ex
       log "Something went wrong while disabling readonly mode", ex
-    end
-
-    def mark_operation_as_running
-      log "Marking operation as running..."
-
-      if !Discourse.redis.set(OPERATION_RUNNING_KEY, "1", ex: 60, nx: true)
-        raise BackupRestore::OperationRunningError
-      end
-
-      save_start_logs_message_id
-      keep_operation_running
-    end
-
-    def mark_operation_as_finished
-      log "Marking operation as finished"
-      Discourse.redis.del(OPERATION_RUNNING_KEY)
-
-      if @keep_operation_running_thread
-        @keep_operation_running_thread.kill
-        @keep_operation_running_thread.join
-        @keep_operation_running_thread = nil
-      end
-    end
-
-    def is_operation_running?
-      !!Discourse.redis.get(OPERATION_RUNNING_KEY)
     end
 
     def listen_for_shutdown_signal
@@ -150,18 +123,6 @@ module BackupRestore
 
     def delete_job_if_it_belongs_to_current_site(job)
       job.delete if job.args.first&.fetch("current_site_id", nil) == @current_db
-    end
-
-    def keep_operation_running
-      # extend the expiry by 1 minute every 30 seconds
-      @keep_operation_running_thread = Thread.new do
-        Thread.current.name = "keep_running"
-
-        while true
-          Discourse.redis.expire(OPERATION_RUNNING_KEY, 1.minute)
-          sleep(30.seconds)
-        end
-      end
     end
 
     def save_start_logs_message_id
