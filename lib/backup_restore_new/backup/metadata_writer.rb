@@ -33,8 +33,8 @@ module BackupRestoreNew
 
       def result_to_stats(result)
         {
-          total_count: result&.fetch(:total_count, 0),
-          included_count: result&.fetch(:included_count, 0),
+          total_count: result&.dig(:total_count) || 0,
+          included_count: result&.dig(:included_count) || 0,
           missing_count: result&.dig(:failed_ids)&.size || 0,
         }
       end

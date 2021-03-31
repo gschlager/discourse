@@ -57,10 +57,10 @@ describe BackupRestoreNew::Backup::UploadBackuper do
     [paths, files]
   end
 
-  describe ".include_original_files?" do
+  describe ".include_uploads?" do
     context "without uploads by users" do
       it "always returns false" do
-        expect(described_class.include_original_files?).to eq(false)
+        expect(described_class.include_uploads?).to eq(false)
       end
     end
 
@@ -69,10 +69,10 @@ describe BackupRestoreNew::Backup::UploadBackuper do
 
       it "always returns true" do
         SiteSetting.include_s3_uploads_in_backups = false
-        expect(described_class.include_original_files?).to eq(true)
+        expect(described_class.include_uploads?).to eq(true)
 
         SiteSetting.include_s3_uploads_in_backups = true
-        expect(described_class.include_original_files?).to eq(true)
+        expect(described_class.include_uploads?).to eq(true)
       end
     end
 
@@ -84,24 +84,24 @@ describe BackupRestoreNew::Backup::UploadBackuper do
 
       it "returns true when include_s3_uploads_in_backups is enabled" do
         SiteSetting.include_s3_uploads_in_backups = true
-        expect(described_class.include_original_files?).to eq(true)
+        expect(described_class.include_uploads?).to eq(true)
       end
 
       it "returns false when include_s3_uploads_in_backups is disabled" do
         SiteSetting.include_s3_uploads_in_backups = false
-        expect(described_class.include_original_files?).to eq(false)
+        expect(described_class.include_uploads?).to eq(false)
       end
     end
   end
 
-  describe ".include_optimized_files?" do
+  describe ".include_optimized_images?" do
     context "without uploads by users" do
       it "always returns false" do
         SiteSetting.include_thumbnails_in_backups = true
-        expect(described_class.include_optimized_files?).to eq(false)
+        expect(described_class.include_optimized_images?).to eq(false)
 
         SiteSetting.include_thumbnails_in_backups = false
-        expect(described_class.include_optimized_files?).to eq(false)
+        expect(described_class.include_optimized_images?).to eq(false)
       end
     end
 
@@ -110,12 +110,12 @@ describe BackupRestoreNew::Backup::UploadBackuper do
 
       it "returns true when include_thumbnails_in_backups is enabled" do
         SiteSetting.include_thumbnails_in_backups = true
-        expect(described_class.include_optimized_files?).to eq(true)
+        expect(described_class.include_optimized_images?).to eq(true)
       end
 
       it "returns false when include_thumbnails_in_backups is disabled" do
         SiteSetting.include_thumbnails_in_backups = false
-        expect(described_class.include_optimized_files?).to eq(false)
+        expect(described_class.include_optimized_images?).to eq(false)
       end
     end
   end

@@ -81,6 +81,11 @@ module BackupRestoreNew
     end
 
     def add_uploads(tar_writer)
+      if !Backup::UploadBackuper.include_uploads?
+        log "Skipping uploads"
+        return
+      end
+
       log_step("Adding uploads", with_progress: true) do |progress_logger|
         tar_writer.add_file_from_stream(name: BackupRestore::UPLOADS_FILE, **tar_file_attributes) do |output_stream|
           backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)
@@ -93,6 +98,11 @@ module BackupRestoreNew
     end
 
     def add_optimized_images(tar_writer)
+      if !Backup::UploadBackuper.include_optimized_images?
+        log "Skipping optimized images"
+        return
+      end
+
       log_step("Adding optimized images", with_progress: true) do |progress_logger|
         tar_writer.add_file_from_stream(name: BackupRestore::OPTIMIZED_IMAGES_FILE, **tar_file_attributes) do |output_stream|
           backuper = Backup::UploadBackuper.new(@tmp_directory, progress_logger)

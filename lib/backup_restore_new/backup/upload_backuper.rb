@@ -5,12 +5,12 @@ require 'mini_tarball'
 module BackupRestoreNew
   module Backup
     class UploadBackuper
-      def self.include_original_files?
+      def self.include_uploads?
         Upload.exists?(Upload.by_users.local) ||
           (SiteSetting.include_s3_uploads_in_backups && Upload.exists?(Upload.by_users.remote))
       end
 
-      def self.include_optimized_files?
+      def self.include_optimized_images?
         # never include optimized images stored on S3
         SiteSetting.include_thumbnails_in_backups && OptimizedImage.exists?(OptimizedImage.by_users.local)
       end
