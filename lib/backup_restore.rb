@@ -41,10 +41,6 @@ module BackupRestore
     true
   end
 
-  def self.should_shutdown?
-    !!Discourse.redis.get(shutdown_signal_key)
-  end
-
   def self.can_rollback?
     backup_tables_count > 0
   end
@@ -119,23 +115,7 @@ module BackupRestore
     )
   end
 
-  def self.redis_keys
-    [shutdown_signal_key]
-  end
-
   private
-
-  def self.shutdown_signal_key
-    "backup_restore_operation_should_shutdown"
-  end
-
-  def self.set_shutdown_signal!
-    Discourse.redis.set(shutdown_signal_key, "1")
-  end
-
-  def self.clear_shutdown_signal!
-    Discourse.redis.del(shutdown_signal_key)
-  end
 
   def self.spawn_process!(type, user_id, opts)
     script = File.join(Rails.root, "script", "spawn_backup_restore.rb")

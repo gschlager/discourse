@@ -38,19 +38,6 @@ module BackupRestore
       log "Something went wrong while disabling readonly mode", ex
     end
 
-    def listen_for_shutdown_signal
-      BackupRestore.clear_shutdown_signal!
-
-      Thread.new do
-        Thread.current.name = "shutdown_wait"
-
-        while is_operation_running?
-          exit if BackupRestore.should_shutdown?
-          sleep 0.1
-        end
-      end
-    end
-
     def pause_sidekiq(reason)
       return if Sidekiq.paused?
 
