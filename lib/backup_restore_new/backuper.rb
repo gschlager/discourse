@@ -45,6 +45,8 @@ module BackupRestoreNew
         @success = false
         @store = BackupRestore::BackupStore.create
 
+        BackupRestoreNew::Operation.start
+
         timestamp = Time.now.utc.strftime("%Y-%m-%d-%H%M%S")
         current_db = RailsMultisite::ConnectionManagement.current_db
         archive_directory = BackupRestore::LocalBackupStore.base_directory(db: current_db)
@@ -138,6 +140,7 @@ module BackupRestoreNew
     def finalize_backup
       log_step("Finalizing backup") do
         DiscourseEvent.trigger(:backup_created)
+        BackupRestoreNew::Operation.finish
       end
     end
 

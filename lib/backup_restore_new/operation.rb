@@ -20,6 +20,8 @@ module BackupRestoreNew
           sleep(30.seconds)
         end
       end
+
+      Rails.env.test? ? @thread : nil
     end
 
     def self.finish
