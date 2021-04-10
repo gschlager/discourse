@@ -42,7 +42,7 @@ module BackupRestoreNew
         @result
       end
 
-      protected
+      private
 
       def with_gzip(output_stream)
         uploads_gz = Zlib::GzipWriter.new(output_stream, SiteSetting.backup_gzip_compression_level_for_uploads)

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'etc'
-require 'mini_mime'
 require 'mini_tarball'
 
 module BackupRestoreNew
@@ -9,10 +8,10 @@ module BackupRestoreNew
     delegate :log, :log_event, :log_step, :log_warning, :log_error, to: :@logger, private: true
     attr_reader :success
 
-    def initialize(user_id, logger, filename: nil)
+    def initialize(user_id, logger, backup_path_override: nil)
       @user = User.find_by(id: user_id) || Discourse.system_user
       @logger = logger
-      @filename_override = filename
+      @backup_path_override = backup_path_override
     end
 
     def run
@@ -33,12 +32,10 @@ module BackupRestoreNew
     ensure
       clean_up
       notify_user
-
-      log "Finished successfully!" if @success
-      log_event @success ? "[SUCCESS]" : "[FAILED]"
+      complete
     end
 
-    protected
+    private
 
     def initialize_backup
       log_step("Initializing backup") do
@@ -49,14 +46,16 @@ module BackupRestoreNew
 
         timestamp = Time.now.utc.strftime("%Y-%m-%d-%H%M%S")
         current_db = RailsMultisite::ConnectionManagement.current_db
-        archive_directory = BackupRestore::LocalBackupStore.base_directory(db: current_db)
+        archive_directory_override, filename_override = calculate_path_overrides
+        archive_directory = archive_directory_override || BackupRestore::LocalBackupStore.base_directory(db: current_db)
 
-        filename = @filename_override || begin
+        filename = filename_override || begin
           parameterized_title = SiteSetting.title.parameterize.presence || "discourse"
           "#{parameterized_title}-#{timestamp}"
         end
 
-        @backup_path = File.join(archive_directory, "#{filename}.tar")
+        @backup_filename = "#{filename}.tar"
+        @backup_path = File.join(archive_directory, @backup_filename)
         @tmp_directory = File.join(Rails.root, "tmp", "backups", current_db, timestamp)
 
         FileUtils.mkdir_p(archive_directory)
@@ -131,9 +130,7 @@ module BackupRestoreNew
       file_size = Object.new.extend(ActionView::Helpers::NumberHelper).number_to_human_size(file_size)
 
       log_step("Uploading backup (#{file_size})") do
-        filename = File.basename(@backup_path)
-        content_type = MiniMime.lookup_by_filename(filename).content_type
-        @store.upload_file(@backup_filename, filename, content_type)
+        @store.upload_file(@backup_filename, @backup_path, "application/x-tar")
       end
     end
 
@@ -164,6 +161,24 @@ module BackupRestoreNew
       end
     end
 
+    def complete
+      if @success
+        if @store.remote?
+          location = BackupLocationSiteSetting.find_by_value(SiteSetting.backup_location)
+          location = I18n.t("admin_js.#{location[:name]}") if location
+          log "Backup stored on #{location} as #{@backup_filename}"
+        else
+          log "Backup stored at: #{@backup_path}"
+        end
+
+        log "Backup completed successfully!"
+        log_event "[SUCCESS]"
+      else
+        log_error "Backup failed!"
+        log_event "[FAILED]"
+      end
+    end
+
     def tar_file_attributes
       @tar_file_attributes ||= {
         uid: Process.uid,
@@ -171,6 +186,20 @@ module BackupRestoreNew
         uname: Etc.getpwuid(Process.uid).name,
         gname: Etc.getgrgid(Process.gid).name,
       }
+    end
+
+    def calculate_path_overrides
+      if @backup_path_override.present?
+        archive_directory_override = File.dirname(@backup_path_override).sub(/^\.$/, "")
+
+        if archive_directory_override.present? && @store.remote?
+          log_warning "Only local backup storage supports overriding backup path."
+          archive_directory_override = nil
+        end
+
+        filename_override = File.basename(@backup_path_override).sub(/\.(sql\.gz|tar|tar\.gz|tgz)$/i, "")
+        [archive_directory_override, filename_override]
+      end
     end
   end
 end

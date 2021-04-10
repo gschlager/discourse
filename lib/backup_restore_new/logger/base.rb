@@ -33,11 +33,11 @@ module BackupRestoreNew
         log_with_exception(message, ex, Logger::WARNING)
       end
 
-      def log_error(message, ex)
+      def log_error(message, ex = nil)
         log_with_exception(message, ex, Logger::ERROR)
       end
 
-      protected
+      private
 
       def create_timestamp
         Time.now.utc.strftime("%Y-%m-%d %H:%M:%S")

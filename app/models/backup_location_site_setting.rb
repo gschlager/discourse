@@ -8,6 +8,10 @@ class BackupLocationSiteSetting < EnumSiteSetting
     values.any? { |v| v[:value] == val }
   end
 
+  def self.find_by_value(val)
+    values.find { |v| v[:value] == val }
+  end
+
   def self.values
     @values ||= [
       { name: "admin.backups.location.local", value: LOCAL },

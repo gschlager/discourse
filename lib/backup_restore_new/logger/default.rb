@@ -20,7 +20,7 @@ module BackupRestoreNew
         save_log(message, timestamp)
       end
 
-      protected
+      private
 
       def publish_log(message, timestamp)
         data = { timestamp: timestamp, operation: "restore", message: message }
