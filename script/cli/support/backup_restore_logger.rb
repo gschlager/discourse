@@ -30,7 +30,7 @@ module DiscourseCLI
         begin
           yield(logger)
           logger.success
-        rescue
+        rescue Exception
           logger.error
           raise
         end

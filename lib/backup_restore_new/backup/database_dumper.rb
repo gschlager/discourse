@@ -15,22 +15,13 @@ module BackupRestoreNew
 
       def dump_schema(dump_output_stream)
         Open3.popen3(pg_dump_command) do |_, stdout, stderr, thread|
-          threads = [thread]
+          thread.name = "pg_dump"
 
-          threads << Thread.new do
-            IO.copy_stream(stdout, dump_output_stream)
-          end
-
-          threads << Thread.new do
-            while line = stderr.readline
-              line.chomp!
-              @log_lines << line
-            end
-          rescue EOFError
-            # finished reading...
-          end
-
-          threads.each(&:join)
+          [
+            thread,
+            output_thread(stdout, dump_output_stream),
+            logger_thread(stderr)
+          ].each(&:join)
         end
 
         last_line = @log_lines.last
@@ -39,7 +30,7 @@ module BackupRestoreNew
         end
       end
 
-      protected
+      private
 
       def pg_dump_command
         db_conf = BackupRestore.database_configuration
@@ -63,6 +54,29 @@ module BackupRestoreNew
           username_argument,            # the username to connect as (if any)
           db_conf.database              # the name of the database to dump
         ].compact.join(" ")
+      end
+
+      def output_thread(stdout, dump_output_stream)
+        Thread.new do
+          Thread.current.name = "pg_dump_copier"
+          Thread.current.report_on_exception = false
+
+          IO.copy_stream(stdout, dump_output_stream)
+        end
+      end
+
+      def logger_thread(stderr)
+        Thread.new do
+          Thread.current.name = "pg_dump_logger"
+          Thread.current.report_on_exception = false
+
+          while line = stderr.readline
+            line.chomp!
+            @log_lines << line
+          end
+        rescue EOFError
+          # finished reading...
+        end
       end
     end
   end

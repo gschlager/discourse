@@ -140,13 +140,12 @@ module BackupRestoreNew
     def finalize_backup
       log_step("Finalizing backup") do
         DiscourseEvent.trigger(:backup_created)
-        BackupRestoreNew::Operation.finish
       end
     end
 
     def clean_up
       log_step("Cleaning up") do
-
+        BackupRestoreNew::Operation.finish
       end
     end
 

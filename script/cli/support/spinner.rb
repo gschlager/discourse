@@ -43,7 +43,7 @@ module DiscourseCLI
       begin
         result = yield
         spinner.success
-      rescue StandardError
+      rescue Exception
         spinner.error
         raise if abort_on_error
       end
