@@ -40,6 +40,7 @@ module BackupRestoreNew
     def initialize_backup
       log_step("Initializing backup") do
         @success = false
+        @warnings = false
         @store = BackupRestore::BackupStore.create
 
         BackupRestoreNew::Operation.start
@@ -94,8 +95,10 @@ module BackupRestoreNew
         end
       end
 
-      error_count = @backup_uploads_result[:failed_ids].size
-      log_warning "Failed to add #{error_count} uploads. See logfile for details." if error_count > 0
+      if (error_count = @backup_uploads_result[:failed_ids].size) > 0
+        @warnings = true
+        log_warning "Failed to add #{error_count} uploads. See logfile for details."
+      end
     end
 
     def add_optimized_images(tar_writer)
@@ -111,8 +114,10 @@ module BackupRestoreNew
         end
       end
 
-      error_count = @backup_optimized_images_result[:failed_ids].size
-      log_warning "Failed to add #{error_count} optimized images. See logfile for details." if error_count > 0
+      if (error_count = @backup_optimized_images_result[:failed_ids].size) > 0
+        @warnings = true
+        log_warning "Failed to add #{error_count} optimized images. See logfile for details."
+      end
     end
 
     def add_metadata(tar_writer)
@@ -171,7 +176,12 @@ module BackupRestoreNew
           log "Backup stored at: #{@backup_path}"
         end
 
-        log "Backup completed successfully!"
+        if @warnings
+          log_warning "Backup completed with warnings!"
+        else
+          log "Backup completed successfully!"
+        end
+
         log_event "[SUCCESS]"
       else
         log_error "Backup failed!"
