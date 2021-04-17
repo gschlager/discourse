@@ -17,13 +17,14 @@ describe BackupRestoreNew::Backup::DatabaseDumper do
       Process.expects(:last_status).returns(status).once
 
       thread = mock("thread")
+      thread.stubs(:name=)
       thread.stubs(:join)
 
       stdin = StringIO.new
       stdout = StringIO.new("stdout 1\nstdout 2")
       stderr = StringIO.new("stderr 1\nstderr 2")
       Open3.expects(:popen3)
-        .with { |command| command.include?("--schema=public") }
+        .with { |env, *command| command.include?("--schema=public") }
         .yields(stdin, stdout, stderr, thread).once
 
       dumper = described_class.new
