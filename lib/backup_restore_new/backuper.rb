@@ -147,6 +147,13 @@ module BackupRestoreNew
 
     def clean_up
       log_step("Cleaning up") do
+        @store.delete_old if !Rails.env.development?
+
+        delete_uploaded_archive
+        remove_tar_leftovers
+        remove_tmp_directory
+        @store.reset_cache
+
         BackupRestoreNew::Operation.finish
       end
     end
