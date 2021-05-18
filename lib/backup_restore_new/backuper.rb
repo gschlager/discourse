@@ -153,8 +153,6 @@ module BackupRestoreNew
         remove_tar_leftovers
         remove_tmp_directory
         @store.reset_cache
-
-        BackupRestoreNew::Operation.finish
       end
     end
 
@@ -174,6 +172,12 @@ module BackupRestoreNew
     end
 
     def complete
+      begin
+        BackupRestoreNew::Operation.finish
+      rescue => e
+        log_error "Failed to mark operation as finished", e
+      end
+
       if @success
         if @store.remote?
           location = BackupLocationSiteSetting.find_by_value(SiteSetting.backup_location)
