@@ -388,6 +388,7 @@ he:
     upload: "העלאה"
     uploading: "בהליכי העלאה..."
     uploading_filename: "מעלה: %{filename}..."
+    processing_filename: "מתבצע עיבוד: %{filename}…"
     clipboard: "לוח"
     uploaded: "הועלה!"
     pasting: "מדביק..."
@@ -683,8 +684,12 @@ he:
       add_members:
         title: "הוספת חברים אל %{group_name}"
         description: "ניתן גם להדביק ברשימה מופרדת בפסיקים"
-        usernames: "נא למלא שמות משתמשים או כתובות דוא״ל"
-        input_placeholder: "שמות משתמשים או כתובות דוא״ל"
+        usernames_or_emails:
+          title: "נא למלא שמות משתמשים או כתובות דוא״ל"
+          input_placeholder: "שמות משתמשים או כתובות דוא״ל"
+        usernames:
+          title: "נא להקליד שמות משתמשים"
+          input_placeholder: "שמות משתמשים"
         notify_users: "להודיע למשתמשים"
       requests:
         title: "בקשות"
@@ -2455,7 +2460,8 @@ he:
         title: "מצב אטי"
         select: "משתמשים יכולים לפרסם לנושא הזה רק פעם אחת בכל:"
         description: "כדי לקדם דיון מתחשב במהלך דיונים מהירים או וכחניים, משתמשים חייבים להמתין בטרם פרסום פעם נוספת לנושא הזה."
-        save: "הפעלה"
+        enable: "הפעלה"
+        update: "עדכון"
         enabled_until: "מופעל עד:"
         remove: "השבתה"
         hours: "שעות:"
@@ -2850,11 +2856,7 @@ he:
           two: "בחרתם <b>%{count}</b> פוסטים."
           many: "בחרתם <b>%{count}</b> פוסטים."
           other: "בחרתם <b>%{count}</b> פוסטים."
-      deleted_by_author:
-        one: "(הנושא הוסר עקב חרטת המפרסם, הוא ימחק אוטומטית בעוד שעה אלמלא יסומן בדגל)"
-        two: "(הנושא הוסר עקב חרטת המפרסם, הוא ימחק אוטומטית בעוד שעתיים אלמלא יסומן בדגל)"
-        many: "(הנושא הוסר עקב חרטת המפרסם, הוא ימחק אוטומטית בעוד %{count} שעות אלמלא יסומן בדגל)"
-        other: "(הנושא הוסר עקב חרטת המפרסם, הוא ימחק אוטומטית בעוד %{count} שעות אלמלא יסומן בדגל)"
+      deleted_by_author_simple: "(הנושא נמחק על ידי הכותב)"
     post:
       quote_reply: "ציטוט"
       quote_share: "שיתוף"
@@ -2869,11 +2871,7 @@ he:
       follow_quote: "מעבר לפוסט המצוטט"
       show_full: "הצגת פוסט מלא"
       show_hidden: "צפייה בתוכן שמיועד להתעלמות."
-      deleted_by_author:
-        one: "(הפוסט נמשך על ידי המחבר, הוא יימחק אוטומטית בעוד שעה (%{count}) אלא אם כן הוא יסומן בדגל)"
-        two: "(הפוסט נמשך על ידי המחבר, הוא יימחק אוטומטית בעוד שעתיים (%{count}) אלא אם כן הוא יסומן בדגל)"
-        many: "(הפוסט נמשך על ידי המחבר, הוא יימחק אוטומטית בעוד %{count} שעות אלא אם כן הוא יסומן בדגל)"
-        other: "(הפוסט נמשך על ידי המחבר, הוא יימחק אוטומטית בעוד %{count} שעות אלא אם כן הוא יסומן בדגל)"
+      deleted_by_author_simple: "(הפוסט נמחק על ידי הכותב)"
       collapse: "צמצום"
       expand_collapse: "הרחב/צמצם"
       locked: "חבר סגל נעל את האפשרות לערוך את הפוסט הזה"
@@ -4367,6 +4365,8 @@ he:
           yaml:
             text: "YAML"
             title: "עריכת הגדרות ערכת העיצוב בתצורת YAML"
+          scss_color_variables_warning: 'השימוש במשתני צבע ליבת SCSS בערכות עיצוב הושמט. נא להשתמש במאפייני CSS מותאמים אישית במקום. <a href="https://meta.discourse.org/t/-/77551#color-variables-2" target="_blank">במדריך הזה</a> יש פרטים נוספים.'
+          scss_warning_inline: "השימוש במשתני צבע ליבת SCSS בערכות עיצוב הושמט."
         colors:
           select_base:
             title: "בחירת מבחר צבעים בסיסי"
@@ -4723,7 +4723,6 @@ he:
           upload_successful: "העלאה הצליחה. מילים נוספו."
         test:
           button_label: "נסיון"
-          modal_title: "בדיקת מילים במעקב ‚%{action}’"
           description: "נא להקליד טקסט להלן כדי לבדוק התאמות מול מילים שבמעקב"
           found_matches: "נמצאו התאמות:"
           no_matches: "לא נמצאו התאמות"
@@ -4782,7 +4781,7 @@ he:
         suspend_reasons:
           not_listening_to_staff: "סירוב להתייחס למשוב הסגל"
           consuming_staff_time: "גזילת זמן רב מהסגל"
-          combatative: "לוחמניות מוגזמת"
+          combative: "לוחמניות מוגזמת"
           in_wrong_place: "במקום הלא נכון"
           no_constructive_purpose: "אין תרומה בונה לקהילה מלבד יצירת מחלוקות"
           custom: "התאמה אישית…"
