@@ -184,7 +184,7 @@ jobs:
         browser: ["Chrome", "Firefox", "Headless Firefox"]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 1
 
