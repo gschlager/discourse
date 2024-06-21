@@ -131,6 +131,7 @@ group :test do
   gem "test-prof"
   gem "rails-dom-testing", require: false
   gem "minio_runner", require: false
+  gem "rspec-multi-mock", require: false
 end
 
 group :test, :development do
@@ -276,3 +277,19 @@ gem "drb"
 # dependencies for the automation plugin
 gem "iso8601"
 gem "rrule"
+
+group :migrations, optional: true do
+  gem "extralite-bundle", require: "extralite"
+
+  # auto-loading
+  gem "zeitwerk"
+
+  # databases
+  gem "trilogy"
+
+  # CLI
+  gem "ruby-progressbar"
+
+  # additional Gemfiles from converters
+  Dir[File.expand_path("migrations/**/Gemfile", __dir__)].each { |path| eval_gemfile(path) }
+end

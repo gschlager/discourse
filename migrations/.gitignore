@@ -1,4 +1,6 @@
 !/db/schema/*.sql
+!/spec/fixtures/**/*.sql
 
 tmp/*
+private/
 Gemfile.lock
