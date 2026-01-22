@@ -7,6 +7,30 @@
 - **Tests first** - Every PR includes tests
 - **Incremental** - Each PR adds one working feature
 - **CLI: Samovar** - Class-based, testable, good documentation
+- **CLI UI: charm-ruby** - Spinners, progress bars, prompts (https://charm-ruby.dev/)
+- **Dual logger** - MessageBus for web UI, charm-ruby for CLI
+
+---
+
+## Important: Sync with Main Branch
+
+The v2 branch is from 2022. These changes have been made to backup/restore since then and **must be incorporated**:
+
+| Commit | Description |
+|--------|-------------|
+| `15f253ef44` | FIX: Reload site settings before seeding content during restore |
+| `3179f9c04d` | FIX: Remove unsupported SQL from DB dump during restore |
+| `2b6675f064` | **SECURITY: Use nonce-based restrictions during restore** |
+| `11bf7ad539` | FIX: Handle restore URLs ending with query params |
+| `b02bc707de` | DEV: Add setting to tag s3 objects enabling tag based access control |
+| `1f2efa7954` | FEATURE: Add utilities for importing and exporting backups |
+| `6b3e28216c` | **FEATURE: Allow pausing of restore before DB migration and uploads** |
+| `44a81069ac` | DEV: Avoid creating system message when system user initiates restore |
+| `07ff21d045` | FIX: Restoring backup could fail due to missing `discourse_functions` |
+| `0513865c3c` | FEATURE: Delete backups based on time window |
+| `a98d2a8086` | FEATURE: allow S3 ACLs to be disabled |
+
+**Action:** Review each of these commits and ensure functionality is preserved in the new implementation.
 
 ## Priority Order (from todos.md)
 
@@ -116,47 +140,186 @@ end
 
 ---
 
-### Chunk 2: Logger Foundation
-**~60-80 lines**
+### Chunk 2: Logger Foundation (Base + Web UI)
+**~80-100 lines**
 
-Simple logger that works for both CLI and background jobs:
-- Logs to STDOUT (CLI) or MessageBus (background)
-- Tracks warnings/errors
-- Formats messages consistently
+Dual-logger system: base class with CLI and Web UI implementations.
 
 ```ruby
-# lib/disco/logger.rb
+# lib/disco/logger/base.rb
 module Disco
-  class Logger
-    attr_reader :warnings, :errors
+  module Logger
+    class Base
+      attr_reader :logs, :warning_count, :error_count
 
-    def initialize(output: $stdout)
-      @output = output
-      @warnings = []
-      @errors = []
+      def initialize
+        @logs = []
+        @warning_count = 0
+        @error_count = 0
+      end
+
+      def log(message) = raise NotImplementedError
+      def warn(message) = raise NotImplementedError
+      def error(message) = raise NotImplementedError
+      def step(message, &block) = raise NotImplementedError
+
+      def warnings? = @warning_count > 0
+      def errors? = @error_count > 0
+
+      protected
+
+      def record(message, level: :info)
+        @logs << { timestamp: Time.now.utc.iso8601, level: level, message: message }
+        @warning_count += 1 if level == :warning
+        @error_count += 1 if level == :error
+      end
     end
+  end
+end
 
-    def log(message)
-      @output.puts message
+# lib/disco/logger/web_logger.rb
+# For web UI - publishes to MessageBus (from v2 DefaultLogger)
+module Disco
+  module Logger
+    class WebLogger < Base
+      CHANNEL = "/admin/backups/logs"
+
+      def initialize(user_id:, client_id:, operation:)
+        super()
+        @user_id = user_id
+        @client_id = client_id
+        @operation = operation
+      end
+
+      def log(message)
+        record(message, level: :info)
+        publish(message)
+      end
+
+      def warn(message)
+        record(message, level: :warning)
+        publish("WARNING: #{message}")
+      end
+
+      def error(message)
+        record(message, level: :error)
+        publish("ERROR: #{message}")
+      end
+
+      def event(message)
+        # Special events like [STARTED], [SUCCESS], [FAILED] for UI state
+        publish(message)
+      end
+
+      def step(message)
+        log(message)
+        yield
+      end
+
+      private
+
+      def publish(message)
+        MessageBus.publish(
+          CHANNEL,
+          { timestamp: Time.now.utc.iso8601, operation: @operation, message: message },
+          user_ids: [@user_id],
+          client_ids: [@client_id]
+        )
+      end
     end
-
-    def warn(message)
-      @warnings << message
-      log "WARNING: #{message}"
-    end
-
-    def error(message)
-      @errors << message
-      log "ERROR: #{message}"
-    end
-
-    def warnings? = @warnings.any?
-    def errors? = @errors.any?
   end
 end
 ```
 
-**Test:** Spec for log, warn, error, tracking.
+**Test:** Spec with mocked MessageBus.
+
+---
+
+### Chunk 2b: CLI Logger with charm-ruby
+**~80-100 lines**
+
+CLI logger using charm-ruby for beautiful terminal output.
+
+```ruby
+# lib/disco/logger/cli_logger.rb
+require "bubbles"  # charm-ruby spinners, progress
+
+module Disco
+  module Logger
+    class CliLogger < Base
+      def initialize(operation:, logfile_path: nil)
+        super()
+        @operation = operation
+        @logfile = setup_logfile(logfile_path)
+        log_to_file("Logging to #{@logfile.path}") if @logfile
+      end
+
+      def log(message)
+        record(message, level: :info)
+        puts message
+        log_to_file(message)
+      end
+
+      def warn(message)
+        record(message, level: :warning)
+        # charm-ruby styling
+        puts Lipgloss.style("WARNING: #{message}").foreground("#FFA500")
+        log_to_file("WARN: #{message}")
+      end
+
+      def error(message)
+        record(message, level: :error)
+        puts Lipgloss.style("ERROR: #{message}").foreground("#FF0000").bold
+        log_to_file("ERROR: #{message}")
+      end
+
+      def step(message)
+        spinner = Bubbles::Spinner.new(title: message)
+        spinner.start
+        begin
+          result = yield
+          spinner.success
+          result
+        rescue => e
+          spinner.error
+          raise
+        end
+      end
+
+      def progress(title:, total:)
+        Bubbles::Progress.new(title: title, total: total)
+      end
+
+      def close
+        @logfile&.close
+      end
+
+      private
+
+      def setup_logfile(path)
+        return nil unless path || Rails.env.production?
+
+        path ||= begin
+          timestamp = Time.now.utc.strftime("%Y-%m-%dT%H%M%SZ")
+          db = RailsMultisite::ConnectionManagement.current_db
+          dir = File.join(Rails.root, "log", "backups", db)
+          FileUtils.mkdir_p(dir)
+          File.join(dir, "#{@operation}-#{timestamp}.log")
+        end
+
+        File.new(path, "w")
+      end
+
+      def log_to_file(message)
+        @logfile&.puts("[#{Time.now.utc.iso8601}] #{message}")
+        @logfile&.flush
+      end
+    end
+  end
+end
+```
+
+**Test:** Spec for file logging, output formatting.
 
 ---
 
@@ -1392,15 +1555,45 @@ end
 
 ---
 
+---
+
+## Web UI Compatibility
+
+The admin web UI (`/admin/backups`) must continue to work. Key integration points:
+
+**MessageBus channels:**
+- `/admin/backups/logs` - Real-time log streaming
+- `/admin/backups` - Backup list updates
+
+**API endpoints (AdminBackupsController):**
+- `POST /admin/backups` - Create backup
+- `POST /admin/backups/:id/restore` - Restore backup
+- `DELETE /admin/backups/cancel` - Cancel operation
+- `POST /admin/backups/rollback` - Rollback restore
+- `GET /admin/backups/status` - Operation status
+
+**Special log events:**
+- `[STARTED]` - Operation began
+- `[SUCCESS]` - Operation completed successfully
+- `[FAILED]` - Operation failed
+
+**Approach:**
+1. Keep existing controller endpoints working
+2. Use `WebLogger` for operations triggered via web UI
+3. Use `CliLogger` for operations triggered via CLI
+4. Both loggers share base class, same log format stored
+
+---
+
 ### Future Chunks (polish and extras)
 
 22. **Version Validation** - Check versions, `--force` flag
-23. **Progress Indicators** - Spinners, progress bars
-24. **Background Job Integration** - MessageBus logging
-25. **S3 Storage for Backups** - Store backups on S3
-26. **New Backup Format (v2)** - meta.json, streaming with mini_tarball
-27. **Optimized Images** - Backup/restore optimized images separately
-28. **Remap Command** - Standalone `disco remap` for SQL-only backups
+23. **Background Job Integration** - Spawn process, MessageBus logging
+24. **S3 Storage for Backups** - Store backups on S3
+25. **New Backup Format (v2)** - meta.json, streaming with mini_tarball
+26. **Optimized Images** - Backup/restore optimized images separately
+27. **Remap Command** - Standalone `disco remap` for SQL-only backups
+28. **Web UI Updates** - Update Ember components if needed
 
 ---
 
