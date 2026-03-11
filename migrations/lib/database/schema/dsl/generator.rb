@@ -14,8 +14,7 @@ module Migrations::Database::Schema::DSL
 
     def generate
       preflight = @schema.preflight
-      validate!(preflight.static_errors, "DSL validation")
-      validate!(preflight.resolved_errors, "Resolved schema validation")
+      validate!(preflight.errors)
       resolved = preflight.resolved
       generate_sql(resolved)
       generate_enums(resolved)
@@ -26,10 +25,10 @@ module Migrations::Database::Schema::DSL
 
     private
 
-    def validate!(errors, label)
+    def validate!(errors)
       return if errors.empty?
 
-      message = "#{label} failed with #{errors.size} #{"error".pluralize(errors.size)}:\n"
+      message = "Schema validation failed with #{errors.size} #{"error".pluralize(errors.size)}:\n"
       message += errors.map { |e| "  - #{e}" }.join("\n")
       raise Migrations::Database::Schema::GenerationError, message
     end
