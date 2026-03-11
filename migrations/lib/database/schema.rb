@@ -3,16 +3,7 @@
 module Migrations::Database
   module Schema
     Definition = Data.define(:tables, :enums)
-    PreflightResult =
-      Data.define(:resolved, :static_errors, :resolved_errors) do
-        def errors
-          static_errors + resolved_errors
-        end
-
-        def valid?
-          errors.empty?
-        end
-      end
+    PreflightResult = Data.define(:resolved, :errors)
     TableDefinition =
       Data.define(
         :name,
@@ -110,15 +101,13 @@ module Migrations::Database
     def self.preflight(database: :intermediate_db)
       ensure_ready!(database:)
 
-      static_errors = DSL::Validator.new(self).validate
-      if static_errors.any?
-        return PreflightResult.new(resolved: nil, static_errors:, resolved_errors: [])
-      end
+      errors = DSL::Validator.new(self).validate
+      return PreflightResult.new(resolved: nil, errors:) if errors.any?
 
       resolved = DSL::SchemaResolver.new(self).resolve
-      resolved_errors = DSL::ResolvedSchemaValidator.new(resolved).validate
+      errors = DSL::ResolvedSchemaValidator.new(resolved).validate
 
-      PreflightResult.new(resolved:, static_errors: [], resolved_errors:)
+      PreflightResult.new(resolved:, errors:)
     end
 
     def self.validate(database: :intermediate_db)
@@ -186,11 +175,11 @@ module Migrations::Database
       File.join(schema_root_path, database.to_s)
     end
 
-    def self.manifest_path
+    private_class_method def self.manifest_path
       File.join(Migrations.root_path, "config", "schema", "plugin_manifest.yml")
     end
 
-    def self.refresh_plugin_manifest!
+    private_class_method def self.refresh_plugin_manifest!
       manifest = plugin_manifest
       return if manifest.fresh?
 
@@ -203,9 +192,7 @@ module Migrations::Database
         puts "Detected #{manifest.table_count} plugin tables, #{manifest.column_count} plugin columns."
       end
     rescue StandardError => e
-      message = "Skipped — #{e.message} (use 'schema refresh-plugins --force' to retry)"
-      puts message
-      raise ConfigError, message
+      raise ConfigError, "Skipped — #{e.message} (use 'schema refresh-plugins --force' to retry)"
     end
 
     def self.available_databases
@@ -221,9 +208,8 @@ module Migrations::Database
       @plugin_manifest = nil
     end
 
-    def self.registry
+    private_class_method def self.registry
       @registry ||= DSL::Registry.new
     end
-    private_class_method :registry, :manifest_path, :refresh_plugin_manifest!
   end
 end

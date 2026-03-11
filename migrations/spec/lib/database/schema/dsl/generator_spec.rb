@@ -49,11 +49,7 @@ RSpec.describe Migrations::Database::Schema::DSL::Generator do
 
   def stub_validation_and_resolution(definition)
     allow(Migrations::Database::Schema).to receive(:preflight).and_return(
-      Migrations::Database::Schema::PreflightResult.new(
-        resolved: definition,
-        static_errors: [],
-        resolved_errors: [],
-      ),
+      Migrations::Database::Schema::PreflightResult.new(resolved: definition, errors: []),
     )
 
     allow(Migrations::Database::Schema::Helpers).to receive(:format_ruby_files)
@@ -145,7 +141,7 @@ RSpec.describe Migrations::Database::Schema::DSL::Generator do
       end
     end
 
-    it "does not overwrite an existing file for :manual mode" do
+    it "does not create a model file for :manual mode even when models directory exists" do
       Dir.mktmpdir do |tmpdir|
         paths = configure_output(tmpdir)
 
@@ -154,12 +150,10 @@ RSpec.describe Migrations::Database::Schema::DSL::Generator do
         stub_validation_and_resolution(definition)
 
         FileUtils.mkdir_p(paths[:models])
-        existing_path = File.join(paths[:models], "log_entry.rb")
-        File.write(existing_path, "# hand-written model\n")
 
         described_class.new(Migrations::Database::Schema).generate
 
-        expect(File.read(existing_path)).to eq("# hand-written model\n")
+        expect(File.exist?(File.join(paths[:models], "log_entry.rb"))).to be false
       end
     end
 
