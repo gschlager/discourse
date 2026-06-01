@@ -3,7 +3,7 @@
 The `migrations/` directory is split into four path-referenced gems:
 
 - `core/` — `Migrations::*`: CLI framework, UI, SQLite schemas, DB infrastructure,
-  IntermediateDB models, and the converter framework (`Migrations::Converter::*`).
+  IntermediateDB models, and the conversion framework (`Migrations::Conversion::*`).
 - `tooling/` — `Migrations::Tooling::*`: the schema DSL, `disco schema` commands, benchmarks.
 - `converters/` — `Migrations::Converters::*`: public converter implementations + source adapters.
 - `importer/` — `Migrations::Importer::*`: the row importer and the uploads importer.

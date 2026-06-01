@@ -78,7 +78,7 @@ module Migrations
           # Each converter directory collapses all of its subdirectories into a
           # single namespace, so that e.g. `discourse/steps/users.rb` defines
           # `Migrations::Converters::Discourse::Users`. This is required by
-          # `Migrations::Converter#steps`, which discovers steps via the
+          # `Migrations::Conversion::Base#steps`, which discovers steps via the
           # converter module's constants.
           all.each_value do |converter_path|
             Dir[File.join(converter_path, "**", "*")].each do |subdir|

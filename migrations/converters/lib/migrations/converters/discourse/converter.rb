@@ -3,7 +3,7 @@
 module Migrations
   module Converters
     module Discourse
-      class Converter < Migrations::Converter::Converter
+      class Converter < Conversion::Base
         def initialize(settings)
           super
           @source_db = Converters::Adapter::Postgres.new(settings[:source_db])
