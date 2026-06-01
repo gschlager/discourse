@@ -25,7 +25,7 @@ module Migrations
           adjust_db_pool_size
 
           settings = load_settings
-          Importer::Uploads::Uploads.perform!(settings)
+          Uploads::Uploads.perform!(settings)
 
           puts ""
         end
