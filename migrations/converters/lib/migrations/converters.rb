@@ -72,7 +72,7 @@ module Migrations
           loader = Zeitwerk::Loader.new
           loader.log! if ENV["DEBUG"]
           loader.inflector.inflect("db" => "DB", "id" => "ID", "cli" => "CLI")
-          loader.push_dir(converters_path, namespace: Migrations::Converters)
+          loader.push_dir(converters_path, namespace: Converters)
           loader.ignore(File.join(converters_path, "register.rb"))
 
           # Each converter directory collapses all of its subdirectories into a
