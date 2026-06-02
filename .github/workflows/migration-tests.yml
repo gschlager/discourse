@@ -43,6 +43,14 @@ jobs:
             (cd "migrations/$gem" && bundle install --jobs $(($(nproc) - 1)) && bundle exec rspec --tag ~rails)
           done
 
+      - name: Converter column coverage (no Rails)
+        run: |
+          bundle config set --local with migrations
+          bundle install --jobs $(($(nproc) - 1))
+          # Fails if the reference (Discourse) converter leaves any IntermediateDB
+          # column unwritten. Runs without Rails or a source database.
+          migrations/bin/disco coverage convert
+
   tests:
     if: github.event_name == 'pull_request' || github.repository != 'discourse/discourse-private-mirror'
     name: Tests

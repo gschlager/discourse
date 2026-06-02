@@ -5,3 +5,9 @@ Migrations::CLI::Registry.register(
   command_class: "Migrations::Tooling::CLI::SchemaCommand",
   description: "Manage the IntermediateDB schema",
 )
+
+Migrations::CLI::Registry.register(
+  name: "coverage",
+  command_class: "Migrations::Tooling::CLI::CoverageCommand",
+  description: "Analyse converter coverage of the IntermediateDB schema",
+)
