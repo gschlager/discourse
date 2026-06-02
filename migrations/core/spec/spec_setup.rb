@@ -19,16 +19,14 @@ module MigrationsSpecSetup
     Migrations.enable_i18n
     Migrations.apply_global_config
 
-    require "rspec-multi-mock"
-
     # Shared support (matchers, helpers, shared examples) lives in the core gem;
     # also load the calling gem's own support, if any.
     load_support(CORE_SPEC_DIR)
     load_support(spec_dir) unless spec_dir == CORE_SPEC_DIR
 
+    # The specs use rspec-mocks only. In the Rails integration job, Discourse's
+    # rails_helper configures the mock framework itself, so we leave it alone.
     RSpec.configure do |config|
-      config.mock_with MultiMock::Adapter.for(:rspec, :mocha)
-
       # Specs tagged `:rails` need a booted Rails environment (live DB
       # introspection, plugin manifests). They run in the Rails integration job,
       # not the isolated gem suite.

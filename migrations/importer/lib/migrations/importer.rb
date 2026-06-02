@@ -33,13 +33,12 @@ module Migrations
     end
 
     # Replicates the previous flat-tree namespace layout:
-    #   * `name_finder/` (and any other non-steps, non-uploads directory)
-    #     collapses into `Migrations::Importer`
+    #   * any directory other than `steps/`, `uploads/`, and `cli/` collapses
+    #     into `Migrations::Importer`
     #   * `steps/` keeps the `Steps` segment; its nested directories collapse
     #     into `Migrations::Importer::Steps`, except `steps/base/` which keeps
     #     its own `Steps::Base` namespace
-    #   * `uploads/` keeps its full `Migrations::Importer::Uploads[::Tasks]`
-    #     namespace and is never collapsed
+    #   * `uploads/` and `cli/` keep their full namespace and are never collapsed
     def self.configure_collapses(loader, importer_dir)
       Dir[File.join(importer_dir, "**", "*")].each do |sub|
         next unless File.directory?(sub)
