@@ -123,9 +123,9 @@ module Migrations
         preflight(database:).errors
       end
 
-      def self.generate(database: :intermediate_db)
+      def self.generate(database: :intermediate_db, output_root: nil)
         ensure_ready!(database:)
-        DSL::Generator.new(self, database:).generate
+        DSL::Generator.new(self, database:, output_root:).generate
       end
 
       def self.diff(database: :intermediate_db)

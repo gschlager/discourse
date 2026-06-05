@@ -36,6 +36,14 @@ migrations/tooling/config/schema/intermediate_db/
 
 All commands accept `--db NAME` (default: `intermediate_db`).
 
+To check everything at once, use `disco check`: it verifies that the database
+has no pending migrations, that the config is in sync with the database, that
+the committed generated files match what generation produces (without touching
+the working tree), and that the reference converter covers every column. It
+exits non-zero on the first failing check — CI runs exactly this command, so a
+clean local run means a green CI check. `disco check schema` and
+`disco check coverage` run the respective subsets.
+
 ## Table configuration
 
 Each table has its own file in `tables/`. The basic structure:
@@ -383,3 +391,4 @@ end
 3. **Validate** your config: `schema validate`
 4. **Check differences**: `schema diff`
 5. **Generate** the schema, models, and enums: `schema generate`
+6. **Verify** everything is consistent and committed: `disco check`

@@ -10,10 +10,20 @@ module Migrations
           CUSTOM_CODE_START = "# -- custom code --"
           CUSTOM_CODE_END = "# -- end custom code --"
 
-          def initialize(schema_module, database: :intermediate_db)
+          # Part of the header written into every generated file; used to
+          # tell generated files apart from hand-written ones.
+          GENERATED_FILE_MARKER = "This file is auto-generated from the"
+
+          # `output_root` overrides where the generated files are written
+          # (defaults to the repository root). Custom code of extended models
+          # is always read from the committed files, so generating into a
+          # temporary directory produces the same output as generating
+          # in place.
+          def initialize(schema_module, database: :intermediate_db, output_root: nil)
             @schema = schema_module
             @database = database
             @output_config = schema_module.config.output_config
+            @output_root = output_root || Migrations.root_path
           end
 
           def generate
@@ -81,7 +91,10 @@ module Migrations
               when :manual
                 next
               when :extended
-                custom_code = extract_custom_code(path)
+                custom_code =
+                  extract_custom_code(
+                    File.join(source_path(@output_config.models_directory), filename),
+                  )
                 File.open(path, "w") { |f| writer.output_table(table, f, custom_code:) }
               else
                 File.open(path, "w") { |f| writer.output_table(table, f) }
@@ -130,7 +143,13 @@ module Migrations
             # formatting is best-effort; generation still succeeds
           end
 
+          # Where generated files are written.
           def expand_path(relative_path)
+            File.expand_path(relative_path, @output_root)
+          end
+
+          # Where the committed files live.
+          def source_path(relative_path)
             File.expand_path(relative_path, Migrations.root_path)
           end
 
@@ -139,7 +158,7 @@ module Migrations
               begin
                 db_label = Helpers.db_label(@output_config.models_namespace)
                 <<~HEADER
-                  This file is auto-generated from the #{db_label} schema. To make changes,
+                  #{GENERATED_FILE_MARKER} #{db_label} schema. To make changes,
                   update the configuration files in "migrations/tooling/config/schema/" and then run
                   `migrations/bin/disco schema generate` to regenerate this file.
                 HEADER
