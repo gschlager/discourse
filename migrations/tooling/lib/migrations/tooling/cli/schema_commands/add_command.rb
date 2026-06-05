@@ -18,6 +18,7 @@ module Migrations
 
           def call
             return print_usage if @options[:help]
+            require_positional!(table_name, "table_name")
 
             database = selected_database
             path = schema.add_table(table_name, database:)
