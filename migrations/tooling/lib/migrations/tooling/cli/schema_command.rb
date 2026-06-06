@@ -14,6 +14,7 @@ module Migrations
                  "diff" => SchemaCommands::DiffCommand,
                  "add" => SchemaCommands::AddCommand,
                  "ignore" => SchemaCommands::IgnoreCommand,
+                 "unignore" => SchemaCommands::UnignoreCommand,
                  "refresh-plugins" => SchemaCommands::RefreshPluginsCommand,
                }
 

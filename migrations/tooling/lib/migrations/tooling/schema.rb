@@ -152,6 +152,13 @@ module Migrations
         DSL::IgnoredFileEditor.new(config_path(database)).add_table(table_name, reason:)
       end
 
+      # No database existence check here: removing entries of tables that no
+      # longer exist is the main use case.
+      def self.unignore_table(table_name, database: :intermediate_db)
+        ensure_ready!(database:)
+        DSL::IgnoredFileEditor.new(config_path(database)).remove_table(table_name)
+      end
+
       # --- Lifecycle Methods ---
 
       def self.ensure_ready!(database: :intermediate_db, refresh_manifest: true)

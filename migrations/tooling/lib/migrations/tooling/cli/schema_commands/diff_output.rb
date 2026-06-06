@@ -11,7 +11,7 @@ module Migrations
         module DiffOutput
           private
 
-          def display_diff(result, verbose: false)
+          def display_diff(result, database:, verbose: false)
             sections = []
 
             if result.unconfigured_tables.any?
@@ -64,7 +64,7 @@ module Migrations
             if sections.any?
               puts sections.join("\n\n")
 
-              actions = suggested_actions(result)
+              actions = suggested_actions(result, database)
               if actions.any?
                 puts
                 puts "Suggested actions:".bold
@@ -76,8 +76,9 @@ module Migrations
           end
 
           # Only suggests actions that match the actual findings.
-          def suggested_actions(result)
+          def suggested_actions(result, database)
             actions = []
+            tables_dir = File.join(relative_config_path(database), "tables")
 
             if result.unconfigured_tables.any?
               actions << "disco schema add <table>"
@@ -85,26 +86,35 @@ module Migrations
             end
 
             if result.missing_tables.any?
-              actions << "delete the config file of tables that no longer exist"
+              actions << "delete the config file of tables that no longer exist " \
+                "(#{tables_dir}/<table>.rb)"
             end
 
-            if result.stale_ignored_tables.any?
-              actions << "remove tables that no longer exist from `ignored.rb`"
-            end
+            actions << "disco schema unignore <table>" if result.stale_ignored_tables.any?
 
             if result.table_diffs.any? { |td| td.unconfigured_columns.any? }
-              actions << "add new columns to the table's `include` list or `ignore` them with a reason"
+              actions << "add new columns to the `include` list in #{tables_dir}/<table>.rb " \
+                "or `ignore` them with a reason"
             end
 
             if result.table_diffs.any? { |td| td.missing_columns.any? }
-              actions << "remove columns that no longer exist from the table's `include` list"
+              actions << "remove columns that no longer exist from the `include` list " \
+                "in #{tables_dir}/<table>.rb"
             end
 
             if result.table_diffs.any? { |td| td.stale_ignored_columns.any? }
-              actions << "remove columns that no longer exist from the table's `ignore` list"
+              actions << "remove columns that no longer exist from the `ignore` list " \
+                "in #{tables_dir}/<table>.rb"
             end
 
             actions
+          end
+
+          def relative_config_path(database)
+            path = Pathname.new(schema.config_path(database))
+            path.relative_path_from(Pathname.pwd).to_s
+          rescue ArgumentError
+            path.to_s
           end
 
           def filter_table_diffs(table_diffs, verbose:)

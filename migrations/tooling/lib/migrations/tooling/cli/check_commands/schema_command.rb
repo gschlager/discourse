@@ -54,7 +54,7 @@ module Migrations
 
             puts "✗ The schema config is out of sync with the database.".red
             puts
-            display_diff(result)
+            display_diff(result, database:)
             false
           end
 
