@@ -11,8 +11,9 @@ module Migrations
         #
         #   1. the dev database has no pending migrations (otherwise every
         #      later answer compares against a stale baseline)
-        #   2. every database column is either configured or ignored
-        #   3. the committed generated files match what generation produces
+        #   2. the schema config is valid
+        #   3. every database column is either configured or ignored
+        #   4. the committed generated files match what generation produces
         #
         # It stops at the first failing link, since everything downstream
         # would report against stale inputs.
@@ -35,10 +36,20 @@ module Migrations
           def run
             database = selected_database
 
-            check_pending_migrations && check_config_drift(database) && check_artifacts(database)
+            check_pending_migrations && check_config_validity(database) &&
+              check_config_drift(database) && check_artifacts(database)
           end
 
           private
+
+          def check_config_validity(database)
+            errors = schema.validate(database:)
+            return true if errors.empty?
+
+            puts "✗ The schema config is invalid:".red
+            errors.each { |error| puts "  - #{error}" }
+            false
+          end
 
           def check_pending_migrations
             return true unless ActiveRecord::Base.connection_pool.migration_context.needs_migration?

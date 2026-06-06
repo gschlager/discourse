@@ -9,7 +9,6 @@ module Migrations
         nested :command,
                {
                  "generate" => SchemaCommands::GenerateCommand,
-                 "validate" => SchemaCommands::ValidateCommand,
                  "list" => SchemaCommands::ListCommand,
                  "diff" => SchemaCommands::DiffCommand,
                  "add" => SchemaCommands::AddCommand,

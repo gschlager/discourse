@@ -26,7 +26,7 @@ module Migrations
             puts
             puts "Next steps:"
             puts "  1. Edit the file to configure columns"
-            puts "  2. Run '#{Migrations::CLI::BIN} schema validate'"
+            puts "  2. Run '#{Migrations::CLI::BIN} check schema'"
           end
         end
       end
