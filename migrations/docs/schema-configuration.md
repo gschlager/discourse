@@ -40,7 +40,8 @@ All commands accept `--db NAME` (default: `intermediate_db`).
 To check everything at once, use `disco check`: it verifies that the database
 has no pending migrations, that the config is in sync with the database, that
 the committed generated files match what generation produces (without touching
-the working tree), and that the reference converter covers every column. It
+the working tree), that the reference converter covers every column, and that
+no converter writes columns or models that don't exist in the schema. It
 exits non-zero on the first failing check — CI runs exactly this command, so a
 clean local run means a green CI check. `disco check schema` and
 `disco check coverage` run the respective subsets.

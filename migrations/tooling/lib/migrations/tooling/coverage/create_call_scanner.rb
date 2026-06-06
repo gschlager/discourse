@@ -14,8 +14,12 @@ module Migrations
       # also be written with leading qualification (e.g.
       # `Database::IntermediateDB::Upload`). We therefore match on the trailing
       # `IntermediateDB::<Const>` segment regardless of qualification, then resolve
-      # `<Const>` against `Migrations::Database::IntermediateDB` and confirm it
-      # responds to `:create` before trusting the match.
+      # `<Const>` against `Migrations::Database::IntermediateDB`.
+      #
+      # A `.create` call on a constant that doesn't resolve to a model — e.g. the
+      # model of a table that was removed from the schema — would raise at
+      # runtime, so such call sites are reported as unknown models instead of
+      # being silently skipped.
       #
       # A column passed via `**splat` or a non-literal keyword can't be verified
       # statically, so the scanner raises an {AnalysisError} rather than silently
@@ -24,9 +28,14 @@ module Migrations
         INTERMEDIATE_DB = :IntermediateDB
         private_constant :INTERMEDIATE_DB
 
+        # `columns` are the written columns per model name; `unknown_models` are
+        # the call site locations per non-resolving model name.
+        Result = Data.define(:columns, :unknown_models)
+
         # @param source [String] Ruby source to analyse
-        # @param path [String] source location, used only in error messages
-        # @return [Hash{String => Set<Symbol>}] written columns per model name
+        # @param path [String] source location, used in error messages and
+        #   unknown model call site locations
+        # @return [Result]
         def self.scan(source, path:)
           result = Prism.parse(source)
 
@@ -37,15 +46,16 @@ module Migrations
 
           scanner = new(path)
           result.value.accept(scanner)
-          scanner.columns
+          Result.new(columns: scanner.columns, unknown_models: scanner.unknown_models)
         end
 
-        attr_reader :columns
+        attr_reader :columns, :unknown_models
 
         def initialize(path)
           super()
           @path = path
           @columns = Hash.new { |hash, key| hash[key] = Set.new }
+          @unknown_models = Hash.new { |hash, key| hash[key] = [] }
         end
 
         def visit_call_node(node)
@@ -58,29 +68,25 @@ module Migrations
         def record_create_call(node)
           return unless node.name == :create
 
-          model_name = intermediate_db_model(node.receiver)
-          return unless model_name
-
-          collect_keywords(node, model_name)
-        end
-
-        # Returns the model's constant name (String) when `receiver` is a
-        # `…::IntermediateDB::<Const>` path that resolves to a model responding to
-        # `:create`, otherwise nil.
-        def intermediate_db_model(receiver)
+          receiver = node.receiver
           return unless receiver.is_a?(Prism::ConstantPathNode)
           return unless const_name(receiver.parent) == INTERMEDIATE_DB
 
-          const = receiver.name
-          model =
-            begin
-              Migrations::Database::IntermediateDB.const_get(const, false)
-            rescue NameError
-              return
-            end
-          return unless model.respond_to?(:create)
+          model_name = receiver.name.to_s
 
-          const.to_s
+          if model?(model_name)
+            collect_keywords(node, model_name)
+          else
+            @unknown_models[model_name] << "#{@path}:#{node.location.start_line}"
+          end
+        end
+
+        # Whether the constant resolves to a model that responds to `create`.
+        def model?(model_name)
+          model = Migrations::Database::IntermediateDB.const_get(model_name, false)
+          model.respond_to?(:create)
+        rescue NameError
+          false
         end
 
         def const_name(node)
@@ -91,6 +97,10 @@ module Migrations
         end
 
         def collect_keywords(node, model_name)
+          # Ensure the model is recorded even when a call site passes no
+          # columns at all.
+          @columns[model_name]
+
           arguments = node.arguments
           return unless arguments
 

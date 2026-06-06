@@ -45,16 +45,17 @@ module Migrations
           def inspect_converter(converter_name)
             validate_converter!(converter_name)
 
-            written =
+            result =
               Coverage::ConverterAnalyzer.new(
                 Migrations::Converters.path_of(converter_name),
-              ).written_columns
+              ).analyze
+            written = result.written_columns
             expected = Coverage::SchemaColumns.call
 
             puts "Columns written by the '#{converter_name}' converter:"
             puts
 
-            if written.empty?
+            if written.empty? && result.unknown_models.empty?
               puts "  (no IntermediateDB.create calls found)"
               return
             end
@@ -64,6 +65,15 @@ module Migrations
               schema_count = expected[model_name]&.columns&.size
               coverage = schema_count ? "#{columns.size}/#{schema_count}" : columns.size.to_s
               puts "  #{model_name} (#{coverage}): #{columns.join(", ")}"
+
+              if (model = expected[model_name]) && (extra = columns - model.columns).any?
+                puts "    unknown #{"column".pluralize(extra.size)}: #{extra.join(", ")}".red
+              end
+            end
+
+            result.unknown_models.keys.sort.each do |model_name|
+              locations = result.unknown_models[model_name]
+              puts "  #{model_name}: model does not exist (#{locations.join(", ")})".red
             end
           end
 

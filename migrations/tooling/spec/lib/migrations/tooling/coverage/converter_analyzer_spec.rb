@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe Migrations::Tooling::Coverage::ConverterAnalyzer do
-  describe "#written_columns" do
+  describe "#analyze" do
     around do |example|
       Dir.mktmpdir do |dir|
         @converter_path = dir
@@ -19,30 +19,43 @@ RSpec.describe Migrations::Tooling::Coverage::ConverterAnalyzer do
       write_source("steps/users.rb", "IntermediateDB::User.create(username: 'a')")
       write_source("steps/more_users.rb", "IntermediateDB::User.create(name: 'n', trust_level: 1)")
 
-      result = described_class.new(@converter_path).written_columns
+      result = described_class.new(@converter_path).analyze
 
-      expect(result["User"]).to contain_exactly(:username, :name, :trust_level)
+      expect(result.written_columns["User"]).to contain_exactly(:username, :name, :trust_level)
     end
 
     it "collects columns per model across the whole converter tree" do
       write_source("steps/users.rb", "IntermediateDB::User.create(username: 'a')")
       write_source("helpers/badges.rb", "IntermediateDB::Badge.create(name: 'b', original_id: 1)")
 
-      result = described_class.new(@converter_path).written_columns
+      result = described_class.new(@converter_path).analyze
 
-      expect(result.keys).to contain_exactly("User", "Badge")
+      expect(result.written_columns.keys).to contain_exactly("User", "Badge")
+    end
+
+    it "collects unknown models with their call site locations" do
+      write_source("steps/old.rb", "IntermediateDB::RemovedModel.create(foo: 1)")
+
+      result = described_class.new(@converter_path).analyze
+
+      expect(result.written_columns).to be_empty
+      expect(result.unknown_models.keys).to contain_exactly("RemovedModel")
+      expect(result.unknown_models["RemovedModel"].first).to end_with("steps/old.rb:1")
     end
 
     it "returns an empty result when no .create calls are present" do
       write_source("steps/noop.rb", "puts 'nothing here'")
 
-      expect(described_class.new(@converter_path).written_columns).to be_empty
+      result = described_class.new(@converter_path).analyze
+
+      expect(result.written_columns).to be_empty
+      expect(result.unknown_models).to be_empty
     end
 
     it "fails loudly when any source contains an unverifiable call site" do
       write_source("steps/users.rb", "IntermediateDB::User.create(**attributes)")
 
-      expect { described_class.new(@converter_path).written_columns }.to raise_error(
+      expect { described_class.new(@converter_path).analyze }.to raise_error(
         Migrations::Tooling::Coverage::AnalysisError,
       )
     end
