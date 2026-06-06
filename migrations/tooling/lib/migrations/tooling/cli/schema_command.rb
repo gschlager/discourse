@@ -4,7 +4,7 @@ module Migrations
   module Tooling
     module CLI
       class SchemaCommand < Migrations::CLI::Command
-        self.description = "Manage the IntermediateDB schema"
+        self.description = "Manage database schemas"
 
         nested :command,
                {

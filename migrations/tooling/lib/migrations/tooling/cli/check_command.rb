@@ -10,7 +10,7 @@ module Migrations
       # stops at the first failing link, since everything downstream of a
       # stale link would report against stale inputs.
       class CheckCommand < Migrations::CLI::Command
-        self.description = "Run all IntermediateDB schema and converter checks"
+        self.description = "Run all schema and converter checks"
 
         # NOTE: no group-level `-h/--help` option — the option hoisting in
         # `Command#parse` would steal `--help` from the subcommands
