@@ -63,13 +63,48 @@ module Migrations
 
             if sections.any?
               puts sections.join("\n\n")
-              puts
-              puts "Suggested actions:".bold
-              puts "  disco schema add <table>"
-              puts "  disco schema ignore <table> [--reason \"...\"]"
+
+              actions = suggested_actions(result)
+              if actions.any?
+                puts
+                puts "Suggested actions:".bold
+                actions.each { |action| puts "  #{action}" }
+              end
             else
               puts "✓ No differences found".green
             end
+          end
+
+          # Only suggests actions that match the actual findings.
+          def suggested_actions(result)
+            actions = []
+
+            if result.unconfigured_tables.any?
+              actions << "disco schema add <table>"
+              actions << "disco schema ignore <table> [--reason \"...\"]"
+            end
+
+            if result.missing_tables.any?
+              actions << "delete the config file of tables that no longer exist"
+            end
+
+            if result.stale_ignored_tables.any?
+              actions << "remove tables that no longer exist from `ignored.rb`"
+            end
+
+            if result.table_diffs.any? { |td| td.unconfigured_columns.any? }
+              actions << "add new columns to the table's `include` list or `ignore` them with a reason"
+            end
+
+            if result.table_diffs.any? { |td| td.missing_columns.any? }
+              actions << "remove columns that no longer exist from the table's `include` list"
+            end
+
+            if result.table_diffs.any? { |td| td.stale_ignored_columns.any? }
+              actions << "remove columns that no longer exist from the table's `ignore` list"
+            end
+
+            actions
           end
 
           def filter_table_diffs(table_diffs, verbose:)
