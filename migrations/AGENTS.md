@@ -21,3 +21,10 @@ README (conventions, gotchas, do/don't notes for automated contributors).
   handling. Leave positionals optional and validate them at the top of `call` with
   `require_positional!` (see `Migrations::CLI::Command`); it raises a presentable
   error, so the user gets a clean message instead of a backtrace.
+
+- **Don't give command groups a `-h/--help` option.** The option hoisting in
+  `Command#parse` moves recognized flags to the front, so a group-level help
+  option steals `--help` from the subcommands — `group sub --help` would run
+  the subcommand instead of printing its help. Leave groups without options;
+  a bare `group --help` surfaces as an unparsable token, which `Bootstrap`
+  turns into usage with exit 0.

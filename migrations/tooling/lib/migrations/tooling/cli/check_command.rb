@@ -12,7 +12,10 @@ module Migrations
       class CheckCommand < Migrations::CLI::Command
         self.description = "Run all IntermediateDB schema and converter checks"
 
-        options { option "-h/--help", "Print out help." }
+        # NOTE: no group-level `-h/--help` option — the option hoisting in
+        # `Command#parse` would steal `--help` from the subcommands
+        # (`check schema --help` would run the check). A bare `--help`
+        # surfaces as an unparsable token, which Bootstrap turns into usage.
 
         nested :command,
                {
@@ -21,10 +24,11 @@ module Migrations
                }
 
         def call
-          return @command.call if @command
-          return print_usage if @options[:help]
-
-          run_all
+          if @command
+            @command.call
+          else
+            run_all
+          end
         end
 
         private
