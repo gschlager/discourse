@@ -4,6 +4,10 @@ require "samovar"
 
 module Migrations
   module CLI
+    # How the binary is invoked from the repository root. Used in user-facing
+    # messages, so that suggested commands are copy-pasteable.
+    BIN = "migrations/bin/disco"
+
     # Base class for all `disco` commands. Commands that need a booted Rails
     # environment declare `requires_rails!`; the binary boots Rails only after
     # such a command has been selected, keeping help and Rails-free commands

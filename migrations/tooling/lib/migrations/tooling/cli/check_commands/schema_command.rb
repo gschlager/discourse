@@ -71,7 +71,7 @@ module Migrations
             result.missing.each { |path| puts "  + #{path} (not committed)".green }
             result.stale.each { |path| puts "  - #{path} (no longer generated)".red }
             puts
-            puts "Run `disco schema generate` and commit the result."
+            puts "Run `#{Migrations::CLI::BIN} schema generate` and commit the result."
             false
           end
         end

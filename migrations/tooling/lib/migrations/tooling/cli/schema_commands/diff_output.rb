@@ -63,51 +63,66 @@ module Migrations
 
             if sections.any?
               puts sections.join("\n\n")
-
-              actions = suggested_actions(result, database)
-              if actions.any?
-                puts
-                puts "Suggested actions:".bold
-                actions.each { |action| puts "  #{action}" }
-              end
+              display_suggested_actions(result, database)
             else
               puts "✓ No differences found".green
             end
           end
 
-          # Only suggests actions that match the actual findings.
-          def suggested_actions(result, database)
-            actions = []
-            tables_dir = File.join(relative_config_path(database), "tables")
+          # Only suggests actions that match the actual findings: commands
+          # first, then the file edits, grouped under the config file path.
+          def display_suggested_actions(result, database)
+            commands = suggested_commands(result)
+            file_edits = suggested_file_edits(result)
+            return if commands.empty? && file_edits.empty?
+
+            puts
+            puts "Suggested actions:".bold
+            commands.each { |command| puts "  #{command}" }
+
+            if file_edits.any?
+              puts if commands.any?
+              tables_dir = File.join(relative_config_path(database), "tables")
+              puts "  In #{tables_dir}/<table>.rb:"
+              file_edits.each { |file_edit| puts "    - #{file_edit}" }
+            end
+          end
+
+          def suggested_commands(result)
+            commands = []
 
             if result.unconfigured_tables.any?
-              actions << "disco schema add <table>"
-              actions << "disco schema ignore <table> [--reason \"...\"]"
+              commands << "#{Migrations::CLI::BIN} schema add <table>"
+              commands << "#{Migrations::CLI::BIN} schema ignore <table> [--reason \"...\"]"
             end
 
-            if result.missing_tables.any?
-              actions << "delete the config file of tables that no longer exist " \
-                "(#{tables_dir}/<table>.rb)"
+            if result.stale_ignored_tables.any?
+              commands << "#{Migrations::CLI::BIN} schema unignore <table>"
             end
 
-            actions << "disco schema unignore <table>" if result.stale_ignored_tables.any?
+            commands
+          end
+
+          def suggested_file_edits(result)
+            file_edits = []
 
             if result.table_diffs.any? { |td| td.unconfigured_columns.any? }
-              actions << "add new columns to the `include` list in #{tables_dir}/<table>.rb " \
-                "or `ignore` them with a reason"
+              file_edits << "add new columns to the `include` list or `ignore` them with a reason"
             end
 
             if result.table_diffs.any? { |td| td.missing_columns.any? }
-              actions << "remove columns that no longer exist from the `include` list " \
-                "in #{tables_dir}/<table>.rb"
+              file_edits << "remove columns that no longer exist from the `include` list"
             end
 
             if result.table_diffs.any? { |td| td.stale_ignored_columns.any? }
-              actions << "remove columns that no longer exist from the `ignore` list " \
-                "in #{tables_dir}/<table>.rb"
+              file_edits << "remove columns that no longer exist from the `ignore` list"
             end
 
-            actions
+            if result.missing_tables.any?
+              file_edits << "delete the file if the table no longer exists"
+            end
+
+            file_edits
           end
 
           def relative_config_path(database)
