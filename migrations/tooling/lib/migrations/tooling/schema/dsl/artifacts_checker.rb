@@ -26,7 +26,7 @@ module Migrations
 
           def check
             Dir.mktmpdir("disco-schema-check-") do |tmp_root|
-              resolved = @schema.generate(database: @database, output_root: tmp_root)
+              resolved = @schema.generate(database: @database, output_root: tmp_root).resolved
               compare(resolved, tmp_root)
             end
           end

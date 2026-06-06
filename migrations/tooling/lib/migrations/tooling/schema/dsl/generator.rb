@@ -14,6 +14,10 @@ module Migrations
           # tell generated files apart from hand-written ones.
           GENERATED_FILE_MARKER = "This file is auto-generated from the"
 
+          # Files deleted by the last `generate` run, relative to the output
+          # root.
+          attr_reader :deleted_files
+
           # `output_root` overrides where the generated files are written
           # (defaults to the repository root). Custom code of extended models
           # is always read from the committed files, so generating into a
@@ -24,6 +28,7 @@ module Migrations
             @database = database
             @output_config = schema_module.config.output_config
             @output_root = output_root || Migrations.root_path
+            @deleted_files = []
           end
 
           def generate
@@ -33,6 +38,7 @@ module Migrations
             generate_sql(resolved)
             generate_enums(resolved)
             generate_models(resolved)
+            delete_stale_files(resolved)
             format_ruby_files!
             resolved
           end
@@ -100,6 +106,44 @@ module Migrations
                 File.open(path, "w") { |f| writer.output_table(table, f) }
               end
             end
+          end
+
+          # Deletes previously generated files that generation no longer
+          # produces, e.g. the model of a table that was removed from the
+          # config. Only files carrying the auto-generated header are
+          # touched; hand-written (manual) models don't have it.
+          def delete_stale_files(resolved)
+            expected = expected_file_paths(resolved)
+
+            [@output_config.models_directory, @output_config.enums_directory].uniq.each do |dir|
+              Dir[File.join(expand_path(dir), "*.rb")].each do |path|
+                next if expected.include?(path)
+                next if File.read(path).exclude?(GENERATED_FILE_MARKER)
+
+                File.delete(path)
+                @deleted_files << display_path(path)
+              end
+            end
+          end
+
+          def expected_file_paths(resolved)
+            models_dir = expand_path(@output_config.models_directory)
+            enums_dir = expand_path(@output_config.enums_directory)
+
+            paths =
+              resolved
+                .tables
+                .reject { |table| table.model_mode == :manual }
+                .map { |table| File.join(models_dir, ModelWriter.filename_for(table)) }
+
+            paths +=
+              resolved.enums.map { |enum| File.join(enums_dir, EnumWriter.filename_for(enum)) }
+            paths.to_set
+          end
+
+          def display_path(path)
+            relative = Pathname.new(path).relative_path_from(@output_root).to_s
+            relative.start_with?("..") ? path : relative
           end
 
           def extract_custom_code(path)
