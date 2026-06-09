@@ -10,10 +10,6 @@ module Migrations
           CUSTOM_CODE_START = "# -- custom code --"
           CUSTOM_CODE_END = "# -- end custom code --"
 
-          # Part of the header written into every generated file; used to
-          # tell generated files apart from hand-written ones.
-          GENERATED_FILE_MARKER = "This file is auto-generated from the"
-
           # Files deleted by the last `generate` run, relative to the output
           # root.
           attr_reader :deleted_files
@@ -113,32 +109,14 @@ module Migrations
           # config. Only files carrying the auto-generated header are
           # touched; hand-written (manual) models don't have it.
           def delete_stale_files(resolved)
-            expected = expected_file_paths(resolved)
+            expected = GeneratedFiles.expected_paths(resolved, @output_config, @output_root)
 
-            [@output_config.models_directory, @output_config.enums_directory].uniq.each do |dir|
-              Dir[File.join(expand_path(dir), "*.rb")].each do |path|
-                next if expected.include?(path)
-                next if File.read(path).exclude?(GENERATED_FILE_MARKER)
-
+            GeneratedFiles
+              .stale_paths(@output_config, @output_root, expected)
+              .each do |path|
                 File.delete(path)
                 @deleted_files << display_path(path)
               end
-            end
-          end
-
-          def expected_file_paths(resolved)
-            models_dir = expand_path(@output_config.models_directory)
-            enums_dir = expand_path(@output_config.enums_directory)
-
-            paths =
-              resolved
-                .tables
-                .reject { |table| table.model_mode == :manual }
-                .map { |table| File.join(models_dir, ModelWriter.filename_for(table)) }
-
-            paths +=
-              resolved.enums.map { |enum| File.join(enums_dir, EnumWriter.filename_for(enum)) }
-            paths.to_set
           end
 
           def display_path(path)
@@ -202,7 +180,7 @@ module Migrations
               begin
                 db_label = Helpers.db_label(@output_config.models_namespace)
                 <<~HEADER
-                  #{GENERATED_FILE_MARKER} #{db_label} schema. To make changes,
+                  #{GeneratedFiles::MARKER} #{db_label} schema. To make changes,
                   update the configuration files in "migrations/tooling/config/schema/" and then run
                   `migrations/bin/disco schema generate` to regenerate this file.
                 HEADER

@@ -18,9 +18,10 @@ module Migrations
       # column-per-keyword `.create`.
       module SchemaColumns
         # Substring of the header `disco schema generate` writes into every
-        # generated model file (see the generator's `file_header`). Manual models
-        # lack it, which is how we tell the two apart from migrations-core alone.
-        GENERATED_MARKER = "This file is auto-generated from the"
+        # generated model file. Manual models lack it, which is how we tell the
+        # two apart from migrations-core alone. Shared with the generator and the
+        # artifacts checker so the three agree on what marks a generated file.
+        GENERATED_MARKER = Schema::DSL::GeneratedFiles::MARKER
         private_constant :GENERATED_MARKER
 
         Model =

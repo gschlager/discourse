@@ -37,56 +37,48 @@ module Migrations
             changed = []
             missing = []
 
-            expected = expected_files(resolved)
-            expected.each do |relative_path|
-              committed = File.join(Migrations.root_path, relative_path)
-              generated = File.join(tmp_root, relative_path)
+            # The same file list rooted at the two locations and in the same
+            # order, so each committed file lines up with its freshly generated
+            # counterpart.
+            committed = expected_paths(resolved, Migrations.root_path)
+            generated = expected_paths(resolved, tmp_root)
 
-              if !File.exist?(committed)
-                missing << relative_path
-              elsif File.read(committed) != File.read(generated)
-                changed << relative_path
+            committed
+              .zip(generated)
+              .each do |committed_path, generated_path|
+                relative = relative_path(committed_path)
+
+                if !File.exist?(committed_path)
+                  missing << relative
+                elsif File.read(committed_path) != File.read(generated_path)
+                  changed << relative
+                end
               end
-            end
 
-            Result.new(changed:, missing:, stale: stale_files(expected))
+            Result.new(changed:, missing:, stale: stale_files(resolved))
           end
 
-          # The files generation produces: the SQL schema and one file per
-          # model and enum. Manual models are hand-written and skipped by the
-          # generator.
-          def expected_files(resolved)
-            files = [@output_config.schema_file]
-
-            resolved.tables.each do |table|
-              next if table.model_mode == :manual
-              files << File.join(@output_config.models_directory, ModelWriter.filename_for(table))
-            end
-
-            resolved.enums.each do |enum|
-              files << File.join(@output_config.enums_directory, EnumWriter.filename_for(enum))
-            end
-
-            files
+          # The files generation produces, rooted at `root`: the SQL schema plus
+          # one file per generated model and enum.
+          def expected_paths(resolved, root)
+            [File.expand_path(@output_config.schema_file, root)] +
+              GeneratedFiles.expected_paths(resolved, @output_config, root)
           end
 
           # Committed generated files that generation no longer produces,
           # e.g. the model of a table that was removed from the config.
-          def stale_files(expected)
-            expected = expected.to_set
-            stale = []
+          def stale_files(resolved)
+            root = Migrations.root_path
+            expected = GeneratedFiles.expected_paths(resolved, @output_config, root)
 
-            [@output_config.models_directory, @output_config.enums_directory].uniq.each do |dir|
-              Dir[File.join(Migrations.root_path, dir, "*.rb")].each do |path|
-                relative_path = Pathname.new(path).relative_path_from(Migrations.root_path).to_s
-                next if expected.include?(relative_path)
-                next if File.read(path).exclude?(Generator::GENERATED_FILE_MARKER)
+            GeneratedFiles
+              .stale_paths(@output_config, root, expected)
+              .map { |path| relative_path(path) }
+              .sort
+          end
 
-                stale << relative_path
-              end
-            end
-
-            stale.sort
+          def relative_path(path)
+            Pathname.new(path).relative_path_from(Migrations.root_path).to_s
           end
         end
       end
