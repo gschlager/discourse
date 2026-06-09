@@ -114,6 +114,7 @@ plugins:
       - discourse_calendar_post_event_dates
       - discourse_post_event_events
       - discourse_post_event_invitees
+      - livestream_topic_chat_channels
     columns: {}
   discourse-data-explorer:
     tables:
@@ -213,13 +214,13 @@ plugins:
     columns: {}
 plugin_checksums:
   automation: e69972690991bc04d92b2d161aac8921
-  chat: af4a593f3c48a945ff09a44128f6efb9
+  chat: eed419ab29ae9cb0a73a32c0e7be9d6c
   discourse-adplugin: 9e52419decf1099c5bc301a90e6cc91a
   discourse-affiliate: '08c6e1a851441a082e9be9ddddc63910'
   discourse-ai: 0eb3819de9ca86f22434718c56a58d1b
   discourse-assign: 7a7a36e8ac0214e8a6aca1a1ed9899aa
   discourse-cakeday: a5bb91366c8dc8d267088eb0c2679187
-  discourse-calendar: 3f8dd26f85e1c26146fbf1c9a882d233
+  discourse-calendar: cd4733206960960975b115a266b8db7e
   discourse-chat-integration: ffa3bf5dba9089491d2fc02971eb96f8
   discourse-data-explorer: ba288745bea628996590debdf02fbaa4
   discourse-gamification: 633256e241b030fddcc059076f7474f8
