@@ -11,8 +11,9 @@ module Migrations
         #
         #   1. the dev database has no pending migrations (otherwise every
         #      later answer compares against a stale baseline)
-        #   2. the schema config is valid
-        #   3. every database column is either configured or ignored
+        #   2. the schema config is internally valid
+        #   3. every database table and column is either configured or ignored
+        #      (drift — reported with `schema add`/`ignore`/`generate` suggestions)
         #   4. the committed generated files match what generation produces
         #
         # It stops at the first failing link, since everything downstream
