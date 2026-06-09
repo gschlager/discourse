@@ -13,8 +13,8 @@ README (conventions, gotchas, do/don't notes for automated contributors).
   sub-command with `name:` (its invocation name), which Samovar stores and exposes
   as `name`. So don't declare a positional `one :name` on a `disco` command — when
   the argument is omitted the accessor silently reads back the command's own name
-  (e.g. `"convert"`) instead of `nil`. Name the positional something else
-  (`one :converter, …`).
+  (e.g. a `schema add` command would read back `"add"`) instead of `nil`. Name the
+  positional something else (`one :table_name, …`).
 
 - **Samovar positionals are never required.** Don't use `one :x, required: true` —
   it raises during parsing, before `call` runs, which breaks the `-h/--help`

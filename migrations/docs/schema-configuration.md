@@ -46,6 +46,10 @@ exits non-zero on the first failing check — CI runs exactly this command, so a
 clean local run means a green CI check. `disco check schema` and
 `disco check coverage` run the respective subsets.
 
+To see which columns a single converter writes (with per-model `N/M` coverage),
+use `disco check coverage --inspect <converter>`. This is a read-only report for
+debugging coverage gaps; it never changes the exit status.
+
 ## Table configuration
 
 Each table has its own file in `tables/`. The basic structure:

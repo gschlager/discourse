@@ -7,12 +7,6 @@ Migrations::CLI::Registry.register(
 )
 
 Migrations::CLI::Registry.register(
-  name: "coverage",
-  command_class: "Migrations::Tooling::CLI::CoverageCommand",
-  description: "Analyse converter coverage of the IntermediateDB schema",
-)
-
-Migrations::CLI::Registry.register(
   name: "check",
   command_class: "Migrations::Tooling::CLI::CheckCommand",
   description: "Run all schema and converter checks",
