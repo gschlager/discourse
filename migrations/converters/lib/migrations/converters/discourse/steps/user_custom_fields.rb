@@ -14,7 +14,7 @@ module Migrations
               FROM user_custom_fields
               WHERE user_id > 0
                 AND value IS NOT NULL
-                AND name NOT LIKE '#{UserFieldValues::USER_FIELD_PREFIX}%'
+                AND name NOT LIKE '#{UserFieldValues::USER_FIELD_LIKE_PATTERN}' ESCAPE '\\'
               GROUP BY user_id, name, value
             ) custom_fields
           SQL
@@ -29,7 +29,7 @@ module Migrations
             FROM user_custom_fields
             WHERE user_id > 0
               AND value IS NOT NULL
-              AND name NOT LIKE '#{UserFieldValues::USER_FIELD_PREFIX}%'
+              AND name NOT LIKE '#{UserFieldValues::USER_FIELD_LIKE_PATTERN}' ESCAPE '\\'
             GROUP BY user_id, name, value
             ORDER BY user_id, name, value
           SQL
