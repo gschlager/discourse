@@ -9,17 +9,9 @@ module Migrations
         class UnignoreCommand < BaseCommand
           self.description = "Remove a table from ignored.rb"
 
-          options do
-            option "-h/--help", "Print out help."
-            option "--db <name>", "Database configuration to use.", default: "intermediate_db"
-          end
+          parameter "TABLE_NAME", "The name of the table to remove from ignored.rb."
 
-          one :table_name, "The name of the table to remove from ignored.rb."
-
-          def call
-            return print_usage if @options[:help]
-            require_positional!(table_name, "table_name")
-
+          def execute
             database = selected_database
             schema.unignore_table(table_name, database:)
             puts "✓ Removed #{table_name} from ignored.rb".green

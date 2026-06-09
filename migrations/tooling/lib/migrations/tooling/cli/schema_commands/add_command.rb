@@ -9,17 +9,9 @@ module Migrations
         class AddCommand < BaseCommand
           self.description = "Create a config file for a new table"
 
-          options do
-            option "-h/--help", "Print out help."
-            option "--db <name>", "Database configuration to use.", default: "intermediate_db"
-          end
+          parameter "TABLE_NAME", "The name of the table to add."
 
-          one :table_name, "The name of the table to add."
-
-          def call
-            return print_usage if @options[:help]
-            require_positional!(table_name, "table_name")
-
+          def execute
             database = selected_database
             path = schema.add_table(table_name, database:)
             puts "✓ Created #{path}".green

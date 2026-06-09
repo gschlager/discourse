@@ -19,25 +19,24 @@ module Migrations
             include Migrations::CLI::PresentableError
           end
 
-          options do
-            option "-h/--help", "Print out help."
-            option "--inspect <converter>",
-                   "Print one converter's covered columns instead of running the gate."
-          end
+          # `inspect` would clash with Object#inspect, so name the accessor
+          # explicitly.
+          option "--inspect",
+                 "CONVERTER",
+                 "Print one converter's covered columns instead of running the gate.",
+                 attribute_name: "inspected_converter"
 
-          def call
-            return print_usage if @options[:help]
-
-            if (converter = @options[:inspect])
-              inspect_converter(converter.downcase)
+          def execute
+            if inspected_converter
+              inspect_converter(inspected_converter.downcase)
             else
-              exit 1 unless run
+              exit 1 unless perform
             end
           end
 
-          # Called directly by `CheckCommand#run_all`, so it must return the
+          # Also called directly by `CheckCommand#run_all`, so it returns the
           # pass/fail boolean rather than exiting.
-          def run
+          def perform
             Coverage::ReferenceCheck.run
           end
 

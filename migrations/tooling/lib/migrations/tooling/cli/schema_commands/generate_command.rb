@@ -9,14 +9,7 @@ module Migrations
         class GenerateCommand < BaseCommand
           self.description = "Generate SQL schema, Ruby models, and enum files"
 
-          options do
-            option "-h/--help", "Print out help."
-            option "--db <name>", "Database configuration to use.", default: "intermediate_db"
-          end
-
-          def call
-            return print_usage if @options[:help]
-
+          def execute
             database = selected_database
             result = schema.generate(database:)
             resolved = result.resolved

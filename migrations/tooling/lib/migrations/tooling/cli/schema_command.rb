@@ -6,24 +6,21 @@ module Migrations
       class SchemaCommand < Migrations::CLI::Command
         self.description = "Manage database schemas"
 
-        nested :command,
-               {
-                 "generate" => SchemaCommands::GenerateCommand,
-                 "list" => SchemaCommands::ListCommand,
-                 "diff" => SchemaCommands::DiffCommand,
-                 "add" => SchemaCommands::AddCommand,
-                 "ignore" => SchemaCommands::IgnoreCommand,
-                 "unignore" => SchemaCommands::UnignoreCommand,
-                 "refresh-plugins" => SchemaCommands::RefreshPluginsCommand,
-               }
-
-        def call
-          if @command
-            @command.call
-          else
-            print_usage
-          end
-        end
+        subcommand "generate",
+                   SchemaCommands::GenerateCommand.description,
+                   SchemaCommands::GenerateCommand
+        subcommand "list", SchemaCommands::ListCommand.description, SchemaCommands::ListCommand
+        subcommand "diff", SchemaCommands::DiffCommand.description, SchemaCommands::DiffCommand
+        subcommand "add", SchemaCommands::AddCommand.description, SchemaCommands::AddCommand
+        subcommand "ignore",
+                   SchemaCommands::IgnoreCommand.description,
+                   SchemaCommands::IgnoreCommand
+        subcommand "unignore",
+                   SchemaCommands::UnignoreCommand.description,
+                   SchemaCommands::UnignoreCommand
+        subcommand "refresh-plugins",
+                   SchemaCommands::RefreshPluginsCommand.description,
+                   SchemaCommands::RefreshPluginsCommand
       end
     end
   end

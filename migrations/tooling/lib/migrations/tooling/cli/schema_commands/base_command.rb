@@ -7,16 +7,19 @@ module Migrations
     module CLI
       module SchemaCommands
         # Shared behaviour for `disco schema <sub>` commands: the `--db` option,
-        # database validation, and access to the schema DSL module.
+        # database validation, and access to the schema DSL module. Subclasses
+        # inherit the `--db` option automatically.
         class BaseCommand < Migrations::CLI::Command
           requires_rails!
+
+          option "--db", "NAME", "Database configuration to use.", default: "intermediate_db"
 
           def schema
             Schema
           end
 
           def selected_database
-            database = (@options[:db] || "intermediate_db").to_s
+            database = db.to_s
             validate_database_option!(database)
             database
           end

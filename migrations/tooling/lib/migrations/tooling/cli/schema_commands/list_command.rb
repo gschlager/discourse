@@ -7,14 +7,7 @@ module Migrations
         class ListCommand < BaseCommand
           self.description = "List configured tables and enums, plus ignored table counts"
 
-          options do
-            option "-h/--help", "Print out help."
-            option "--db <name>", "Database configuration to use.", default: "intermediate_db"
-          end
-
-          def call
-            return print_usage if @options[:help]
-
+          def execute
             database = selected_database
             schema.ensure_ready!(database:)
 

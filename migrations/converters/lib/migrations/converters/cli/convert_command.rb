@@ -10,39 +10,40 @@ module Migrations
 
         self.description = "Convert a source dump into the IntermediateDB"
 
-        options do
-          option "-h/--help", "Print out help."
-          option "--settings <path>", "Path of the settings file."
-          option "--reset", "Reset the database before converting data."
-          option "--only <steps>",
-                 "Run only the specified steps (comma-separated).",
-                 default: [],
-                 type: STEP_LIST
-          option "--skip <steps>",
-                 "Skip the specified steps (comma-separated).",
-                 default: [],
-                 type: STEP_LIST
+        option "--settings", "PATH", "Path of the settings file."
+        option "--reset", :flag, "Reset the database before converting data."
+        option "--only",
+               "STEPS",
+               "Run only the specified steps (comma-separated).",
+               default: [] do |value|
+          STEP_LIST.call(value)
+        end
+        option "--skip",
+               "STEPS",
+               "Skip the specified steps (comma-separated).",
+               default: [] do |value|
+          STEP_LIST.call(value)
         end
 
-        one :converter_type, "The converter to run (e.g. discourse)."
+        # Optional at the parser level so a missing value produces our own
+        # message (with the list of valid converters) rather than Clamp's
+        # generic "no value provided".
+        parameter "[CONVERTER_TYPE]", "The converter to run (e.g. discourse)."
 
-        def call
-          return print_usage if @options[:help]
+        def execute
+          if converter_type.nil?
+            raise Error, "Missing required argument: <converter_type>\n#{valid_names_message}"
+          end
 
-          type =
-            require_positional!(
-              converter_type,
-              "converter_type",
-              hint: valid_names_message,
-            ).downcase
+          type = converter_type.downcase
           validate_converter_type!(type)
 
           settings = load_settings(type)
 
-          Database.reset!(settings[:intermediate_db][:path]) if @options[:reset]
+          Database.reset!(settings[:intermediate_db][:path]) if reset?
 
           converter = "migrations/converters/#{type}/converter".camelize.constantize
-          converter.new(settings).run(only_steps: @options[:only], skip_steps: @options[:skip])
+          converter.new(settings).run(only_steps: only, skip_steps: skip)
         end
 
         private
@@ -61,7 +62,7 @@ module Migrations
         end
 
         def load_settings(type)
-          settings_path = @options[:settings] || Converters.default_settings_path(type)
+          settings_path = settings || Converters.default_settings_path(type)
           settings_path = File.expand_path(settings_path, Dir.pwd)
 
           raise Error, "Settings file not found: #{settings_path}" unless File.exist?(settings_path)

@@ -11,18 +11,12 @@ module Migrations
 
           self.description = "Show differences between configuration and database"
 
-          options do
-            option "-h/--help", "Print out help."
-            option "--db <name>", "Database configuration to use.", default: "intermediate_db"
-            option "--verbose", "Show auto-ignored plugin columns."
-          end
+          option "--verbose", :flag, "Show auto-ignored plugin columns."
 
-          def call
-            return print_usage if @options[:help]
-
+          def execute
             database = selected_database
             result = schema.diff(database:)
-            display_diff(result, database:, verbose: @options[:verbose])
+            display_diff(result, database:, verbose: verbose?)
           end
         end
       end

@@ -12,35 +12,29 @@ module Migrations
       class CheckCommand < Migrations::CLI::Command
         self.description = "Run all schema and converter checks"
 
-        # NOTE: no group-level `-h/--help` option — the option hoisting in
-        # `Command#parse` would steal `--help` from the subcommands
-        # (`check schema --help` would run the check). A bare `--help`
-        # surfaces as an unparsable token, which Bootstrap turns into usage.
+        subcommand "schema", CheckCommands::SchemaCommand.description, CheckCommands::SchemaCommand
+        subcommand "coverage",
+                   CheckCommands::CoverageCommand.description,
+                   CheckCommands::CoverageCommand
 
-        nested :command,
-               {
-                 "schema" => CheckCommands::SchemaCommand,
-                 "coverage" => CheckCommands::CoverageCommand,
-               }
+        # `disco check` with no subcommand runs every check. Clamp would otherwise
+        # show help here, so intercept the no-argument case; everything else
+        # (a subcommand, `--help`) goes through the normal Clamp dispatch.
+        def run(arguments)
+          return super unless arguments.empty?
 
-        def call
-          if @command
-            @command.call
-          else
-            run_all
-          end
+          # The schema checks need Rails. This command itself doesn't declare
+          # `requires_rails!` so that `check coverage` and `--help` stay
+          # Rails-free; the all-checks mode boots it here instead.
+          Migrations.load_rails_environment(quiet: true)
+          run_all
         end
 
         private
 
         def run_all
-          # The schema checks need Rails. This command itself doesn't declare
-          # `requires_rails!` so that `check coverage` and `--help` stay
-          # Rails-free; the all-checks mode boots it here instead.
-          Migrations.load_rails_environment(quiet: true)
-
           puts "Checking schema config and generated files...".bold
-          unless CheckCommands::SchemaCommand.new([]).run
+          unless build_check(CheckCommands::SchemaCommand).perform
             puts
             puts "Skipping the remaining checks, they would run against stale inputs.".red
             exit 1
@@ -48,7 +42,13 @@ module Migrations
 
           puts
           puts "Checking converter coverage...".bold
-          exit 1 unless CheckCommands::CoverageCommand.new([]).run
+          exit 1 unless build_check(CheckCommands::CoverageCommand).perform
+        end
+
+        # Instantiate a check sub-command with its option defaults applied, so it
+        # can be run directly (via `#perform`) instead of through argv dispatch.
+        def build_check(command_class)
+          command_class.new(invocation_path, context).tap { |command| command.parse([]) }
         end
       end
     end

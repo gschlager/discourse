@@ -1,42 +1,39 @@
 # frozen_string_literal: true
 
 RSpec.describe Migrations::CLI::Bootstrap do
-  describe ".normalize_option_args" do
-    subject(:normalized) { described_class.normalize_option_args(argv) }
-
-    context "with the `--opt=value` form" do
-      let(:argv) { %w[schema generate --db=intermediate_db] }
-
-      it "splits it into two tokens" do
-        expect(normalized).to eq(%w[schema generate --db intermediate_db])
+  describe ".build_root_command" do
+    let(:dummy_command) do
+      Class.new(Migrations::CLI::Command) do
+        self.description = "Dummy command"
+        def execute
+        end
       end
     end
 
-    context "with the `--opt value` form" do
-      let(:argv) { %w[schema generate --db intermediate_db] }
+    before { Migrations::CLI::Registry.reset! }
+    after { Migrations::CLI::Registry.reset! }
 
-      it "leaves it unchanged" do
-        expect(normalized).to eq(%w[schema generate --db intermediate_db])
-      end
-    end
-
-    it "splits only on the first `=`" do
-      expect(described_class.normalize_option_args(["--filter=a=b"])).to eq(%w[--filter a=b])
-    end
-
-    it "preserves comma-separated values" do
-      expect(described_class.normalize_option_args(["--only=users,topics"])).to eq(
-        %w[--only users,topics],
+    it "registers each registry entry as a Clamp sub-command" do
+      Migrations::CLI::Registry.register(
+        name: "dummy",
+        command_class: dummy_command,
+        description: "Dummy command",
       )
+
+      root = described_class.build_root_command
+
+      expect(root.recognised_subcommands.flat_map(&:names)).to eq(["dummy"])
+      expect(root.find_subcommand("dummy").subcommand_class).to eq(dummy_command)
+      expect(root.find_subcommand("dummy").description).to eq("Dummy command")
     end
 
-    it "does not touch short flags, the `--` separator, or bare values" do
-      argv = %w[-s=x -- key=value]
-      expect(described_class.normalize_option_args(argv)).to eq(argv)
-    end
+    it "orders sub-commands by registration name" do
+      Migrations::CLI::Registry.register(name: "zebra", command_class: dummy_command)
+      Migrations::CLI::Registry.register(name: "alpha", command_class: dummy_command)
 
-    it "leaves a bare `--=value` untouched" do
-      expect(described_class.normalize_option_args(["--=value"])).to eq(["--=value"])
+      root = described_class.build_root_command
+
+      expect(root.recognised_subcommands.flat_map(&:names)).to eq(%w[alpha zebra])
     end
   end
 end

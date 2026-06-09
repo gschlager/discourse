@@ -22,18 +22,13 @@ module Migrations
 
           self.description = "Check schema config against the database and generated files"
 
-          options do
-            option "-h/--help", "Print out help."
-            option "--db <name>", "Database configuration to use.", default: "intermediate_db"
+          def execute
+            exit 1 unless perform
           end
 
-          def call
-            return print_usage if @options[:help]
-
-            exit 1 unless run
-          end
-
-          def run
+          # Also called directly by `CheckCommand#run_all`, so it returns the
+          # pass/fail boolean rather than exiting.
+          def perform
             database = selected_database
 
             check_pending_migrations && check_config_validity(database) &&

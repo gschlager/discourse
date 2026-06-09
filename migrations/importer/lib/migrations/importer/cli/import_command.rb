@@ -8,23 +8,22 @@ module Migrations
 
         self.description = "Import the IntermediateDB into a Discourse database"
 
-        options do
-          option "-h/--help", "Print out help."
-          option "--reset", "Reset MappingsDB before importing data."
-          option "--only <steps>",
-                 "Run only the specified steps (comma-separated).",
-                 default: [],
-                 type: STEP_LIST
-          option "--skip <steps>",
-                 "Skip the specified steps (comma-separated).",
-                 default: [],
-                 type: STEP_LIST
+        option "--reset", :flag, "Reset MappingsDB before importing data."
+        option "--only",
+               "STEPS",
+               "Run only the specified steps (comma-separated).",
+               default: [] do |value|
+          STEP_LIST.call(value)
+        end
+        option "--skip",
+               "STEPS",
+               "Skip the specified steps (comma-separated).",
+               default: [] do |value|
+          STEP_LIST.call(value)
         end
 
-        def call
-          return print_usage if @options[:help]
-
-          Importer.execute(reset: @options[:reset], only: @options[:only], skip: @options[:skip])
+        def execute
+          Importer.execute(reset: reset?, only:, skip:)
         end
       end
     end

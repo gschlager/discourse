@@ -9,21 +9,15 @@ module Migrations
         class RefreshPluginsCommand < BaseCommand
           self.description = "Regenerate the plugin manifest"
 
-          options do
-            option "-h/--help", "Print out help."
-            option "--db <name>", "Database configuration to use.", default: "intermediate_db"
-            option "--force", "Force regeneration."
-          end
+          option "--force", :flag, "Force regeneration."
 
-          def call
-            return print_usage if @options[:help]
-
+          def execute
             database = selected_database
             schema.ensure_ready!(database:, refresh_manifest: false)
 
             manifest = schema.plugin_manifest
 
-            if @options[:force] || !manifest.fresh? || manifest.incomplete?
+            if force? || !manifest.fresh? || manifest.incomplete?
               puts "Detecting plugin tables and columns..."
               manifest.regenerate!
               if manifest.incomplete?

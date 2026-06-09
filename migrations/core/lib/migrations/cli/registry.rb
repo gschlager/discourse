@@ -3,7 +3,7 @@
 module Migrations
   module CLI
     # Central registry of top-level `disco` commands. Each gem requires its
-    # `register.rb` at startup, which pushes its commands here. The Samovar
+    # `register.rb` at startup, which pushes its commands here. The Clamp
     # command tree is built from this registry just before argv is parsed.
     module Registry
       Entry = Struct.new(:name, :command_class, :description, keyword_init: true)
@@ -22,15 +22,16 @@ module Migrations
         @entries = {}
       end
 
-      # Resolves the registered command classes (stored as strings to keep Rails
-      # lazy) into a name => Class hash, ordered by registration name.
-      def self.command_classes
+      # Resolves the registered entries (command classes are stored as strings to
+      # keep Rails lazy) into `[name, description, Class]` triples, ordered by
+      # name. Consumed by {Bootstrap} to build the Clamp sub-command tree.
+      def self.entries_sorted
         entries
           .sort_by { |name, _| name }
-          .each_with_object({}) do |(name, entry), hash|
+          .map do |name, entry|
             klass = entry.command_class
             klass = klass.to_s.constantize if klass.is_a?(String) || klass.is_a?(Symbol)
-            hash[name] = klass
+            [name, entry.description, klass]
           end
       end
     end
