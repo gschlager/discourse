@@ -33,6 +33,7 @@ module Ansi
   BAR_EMPTY = "\e[38;2;96;96;96m"
   EL = "\e[K"     # erase to end of line
   EL_ALL = "\e[2K"
+  ERASE_BELOW = "\e[J" # erase from cursor to end of screen
   HIDE_CURSOR = "\e[?25l"
   SHOW_CURSOR = "\e[?25h"
 
@@ -113,10 +114,19 @@ class AnsiRenderer
         @resize_pending = false
         @cols = ($stdout.winsize[1] rescue @cols)
         @last_live = nil # force a repaint at the new width
-        # Never cursor-up across a resize: the emulator may have rewrapped the
-        # old rows, so the region's physical height is unknown. Abandon it and
-        # re-anchor; the old lines stay above as a frozen snapshot.
-        @live_count = 0
+        # Reclaim what we provably can: after a resize the old region is at
+        # least @live_count physical rows tall (rewrapping never shrinks it),
+        # so moving up live_count-1 rows stays within our own rows. Erase from
+        # there to the end of the screen and repaint. Pure grows and
+        # non-reflowing terminals lose the whole stale region; reflowing
+        # shrinks can leave fragments of the topmost lines.
+        if @live_count > 0
+          out = +""
+          out << Ansi.up(@live_count - 1) if @live_count > 1
+          out << "\r" << Ansi::ERASE_BELOW
+          $stdout.write(out)
+          @live_count = 0
+        end
       end
       repaint
       t_paint = mono

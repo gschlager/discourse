@@ -247,7 +247,7 @@ step start/finish plus one per progress decile, notices as-is, no cursor codes
 | GNU screen 5.0.1 | TUI path; clean rendering and history; screen's hardcopy shows 🚀 as `？` (screen quirk — argues for no emoji in real step titles) |
 | pipe / CI (GitHub Actions shape) | plain mode via `tty?` → readable decile log, exit 0 (`ansi_pipe`) |
 | `TERM=dumb` on a real pty | plain mode (`ansi_dumb`) |
-| tmux window resized mid-run (110→60→110) | clean — but only after two renderer fixes (see below) |
+| tmux window resized mid-run | grow: fully clean; shrink with a multi-line region: at most fragments of the topmost live lines survive (see below) |
 | RubyMine run console | default console is a non-tty pipe → plain mode — the same mechanism that makes ExtendedProgressBar degrade there today (ruby-progressbar auto-selects `Outputs::NonTty` on `tty?` false); with "Emulate terminal in output console" it is a pty with a real TERM → TUI path. Not testable in this environment; both branches of the ladder cover it. |
 | SSH | transparent byte stream; rendering happens in the user's local terminal and TERM comes from the client — nothing to detect server-side |
 
@@ -264,15 +264,21 @@ shrink, kept the wrap flag while we overwrote those rows, and rejoined them on g
 merging two of our lines into one. Two renderer changes fix it (verified in tmux,
 shrink 110→60 and back mid-run, clean final screen and history):
 
-1. **Re-anchor on WINCH** — never cursor-up across a resize; set the region height to
-   zero and start fresh. Old rows stay above as a frozen snapshot.
+1. **Bounded reclaim on WINCH** — the old region is at least `live_count` physical
+   rows tall whatever the emulator did (rewrapping never shrinks it), so cursor-up
+   `live_count - 1` is provably still within our own rows. Move there, erase to end
+   of screen, repaint. Pure grows and non-reflowing terminals lose the entire stale
+   region; reflowing shrinks lose everything below the landing row.
 2. **Erase-entire-line before writing** (`\e[2K` + content instead of content +
    erase-tail) — clears the emulator's wrap flags on rewritten rows, so grow no
    longer rejoins them.
 
-Remaining inherent limit: whatever is on screen at the resize instant may persist in
-history as a wrapped snapshot. Behavior should be eyeballed per emulator; the
-mitigation above is emulator-agnostic, the wrap-flag behavior is not.
+Verified in tmux: a mid-run grow (60→110) leaves zero artifacts; a mid-run shrink
+(110→60 with 3 live bars) leaves a single truncated fragment of the topmost live
+line in history. That fragment is the floor for inline renderers — removing it would
+need a DSR cursor-position probe (reading stdin in cbreak mode), not worth it here.
+Wrap-flag behavior varies by emulator, so eyeball per terminal; the reclaim bound
+itself is emulator-agnostic.
 
 Note: the current migrations tree has no tty/TERM/RubyMine detection of its own —
 today's graceful degradation comes entirely from ruby-progressbar's Tty/NonTty output
