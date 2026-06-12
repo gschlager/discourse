@@ -247,8 +247,32 @@ step start/finish plus one per progress decile, notices as-is, no cursor codes
 | GNU screen 5.0.1 | TUI path; clean rendering and history; screen's hardcopy shows 🚀 as `？` (screen quirk — argues for no emoji in real step titles) |
 | pipe / CI (GitHub Actions shape) | plain mode via `tty?` → readable decile log, exit 0 (`ansi_pipe`) |
 | `TERM=dumb` on a real pty | plain mode (`ansi_dumb`) |
+| tmux window resized mid-run (110→60→110) | clean — but only after two renderer fixes (see below) |
 | RubyMine run console | default console is a non-tty pipe → plain mode — the same mechanism that makes ExtendedProgressBar degrade there today (ruby-progressbar auto-selects `Outputs::NonTty` on `tty?` false); with "Emulate terminal in output console" it is a pty with a real TERM → TUI path. Not testable in this environment; both branches of the ladder cover it. |
 | SSH | transparent byte stream; rendering happens in the user's local terminal and TERM comes from the client — nothing to detect server-side |
+
+### Resize on reflowing terminals
+
+Shrinking the window is the one case a PTY-level test can't judge: emulators that
+reflow (tmux, VTE, iTerm2, kitty) rewrap already-drawn rows *at the instant of
+resize, before WINCH reaches the process*, so the live region's physical height
+becomes unknown and cursor-up arithmetic anchors wrong. This is inherent to every
+inline renderer (Go bubbletea inline mode and tty-progressbar included); only
+alt-screen TUIs avoid it, at the cost of the scrollback persistence we require.
+Resizing tmux mid-run initially produced a real artifact: tmux wrapped a live row at
+shrink, kept the wrap flag while we overwrote those rows, and rejoined them on grow —
+merging two of our lines into one. Two renderer changes fix it (verified in tmux,
+shrink 110→60 and back mid-run, clean final screen and history):
+
+1. **Re-anchor on WINCH** — never cursor-up across a resize; set the region height to
+   zero and start fresh. Old rows stay above as a frozen snapshot.
+2. **Erase-entire-line before writing** (`\e[2K` + content instead of content +
+   erase-tail) — clears the emulator's wrap flags on rewritten rows, so grow no
+   longer rejoins them.
+
+Remaining inherent limit: whatever is on screen at the resize instant may persist in
+history as a wrapped snapshot. Behavior should be eyeballed per emulator; the
+mitigation above is emulator-agnostic, the wrap-flag behavior is not.
 
 Note: the current migrations tree has no tty/TERM/RubyMine detection of its own —
 today's graceful degradation comes entirely from ruby-progressbar's Tty/NonTty output

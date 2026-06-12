@@ -113,6 +113,10 @@ class AnsiRenderer
         @resize_pending = false
         @cols = ($stdout.winsize[1] rescue @cols)
         @last_live = nil # force a repaint at the new width
+        # Never cursor-up across a resize: the emulator may have rewrapped the
+        # old rows, so the region's physical height is unknown. Abandon it and
+        # re-anchor; the old lines stay above as a frozen snapshot.
+        @live_count = 0
       end
       repaint
       t_paint = mono
@@ -204,9 +208,9 @@ out = +""
 out << Ansi.up(@live_count - 1) if @live_count > 1
 out << "\r"
 
-    permanent.each { |line| out << fit(line) << Ansi::EL << "\r\n" }
+    permanent.each { |line| out << Ansi::EL_ALL << fit(line) << "\r\n" }
     live.each_with_index do |line, i|
-      out << fit(line) << Ansi::EL
+      out << Ansi::EL_ALL << fit(line)
       out << "\r\n" if i < live.size - 1
     end
 
