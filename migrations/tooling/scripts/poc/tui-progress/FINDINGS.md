@@ -273,9 +273,15 @@ shrink 110→60 and back mid-run, clean final screen and history):
    erase-tail) — clears the emulator's wrap flags on rewritten rows, so grow no
    longer rejoins them.
 
-Verified in tmux: a mid-run grow (60→110) leaves zero artifacts; a mid-run shrink
-(110→60 with 3 live bars) leaves a single truncated fragment of the topmost live
-line in history. That fragment is the floor for inline renderers — removing it would
+3. **Paint with a 2-column safety margin** — window drags deliver WINCH in small
+   steps; lines that never exceed the shrunken width never wrap, so the reclaim
+   stays exact all the way down. Only a single jump wider than the margin can still
+   wrap a line.
+
+Verified in tmux: a mid-run grow (60→110) leaves zero artifacts; a simulated drag
+(110→54 in 2-column steps, crossing below the longest line) leaves zero fragments;
+a single large shrink jump (110→60 with 3 live bars, before the margin existed) left
+one truncated fragment of the topmost live line in history. That fragment is the floor for inline renderers — removing it would
 need a DSR cursor-position probe (reading stdin in cbreak mode), not worth it here.
 Wrap-flag behavior varies by emulator, so eyeball per terminal; the reclaim bound
 itself is emulator-agnostic.

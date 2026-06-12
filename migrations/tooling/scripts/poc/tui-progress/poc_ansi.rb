@@ -246,8 +246,12 @@ end
     @last_live = live
   end
 
+  # Two columns short of the window: WINCH arrives in small steps during a
+  # window drag, and lines that never exceed the shrunken width never wrap,
+  # so the resize reclaim stays exact. Only a jump wider than the margin can
+  # still wrap a line.
   def fit(line)
-    Ansi.truncate(line, @cols)
+    Ansi.truncate(line, [@cols - 2, 8].max)
   end
 
   def record_latency(lat)
