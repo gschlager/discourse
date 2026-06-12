@@ -1,0 +1,19 @@
+Fetching gem metadata from https://rubygems.org/.............
+Resolving dependencies...
+WARN: Unresolved or ambiguous specs during Gem::Specification.reset:
+      psych (>= 4.0.0)
+      Available/installed versions of this gem:
+      - 5.4.0
+      - 5.2.2
+WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'
+Please report a bug if this causes problems.
+✓ Tags            10,944/10,944  0:02
+ℹ forked 4 worker children: 902501, 902504, 902507, 902510
+ℹ Index hint: post_custom_fields is missing index on (name)
+✓ Uploads         35,812  0:03
+ℹ reaped 4 worker children
+✓ Likes 🚀        50,000/50,000  0:02
+ℹ Re-checking orphaned uploads
+✓ Posts           1,248,776/1,248,776  0:06  ✗ 2 errors
+ℹ Slow query in tags lookup (412 ms)
+ℹ Checkpoint written

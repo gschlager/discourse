@@ -1,0 +1,72 @@
+poc_ansi: plain output mode (TERM="dumb")
+simulation started (plain mode: TERM="dumb")
+Categories started (4,281 items)
+Categories 10% (571/4,281)
+Users started (312,440 items)
+Categories 20% (858/4,281)
+Categories 30% (1,430/4,281)
+Users 10% (31,327/312,440)
+Categories 40% (1,717/4,281)
+Categories 50% (2,290/4,281)
+Users 20% (62,738/312,440)
+Categories 60% (2,576/4,281)
+Posts started (1,248,776 items)
+Categories 70% (3,150/4,281)
+Users 30% (94,149/312,440)
+Categories 80% (3,438/4,281)
+Tags started (10,944 items)
+Categories 90% (4,011/4,281)
+ℹ Calculating max progress for posts, this may take a while…
+Users 40% (125,483/312,440)
+Categories 100% (4,281/4,281)
+✓ Categories 4,281 in 0:01
+Uploads started
+Posts 10% (125,653/1,248,776)
+Tags 10% (1,316/10,944)
+Users 50% (156,777/312,440)
+Tags 20% (2,193/10,944)
+Users 60% (188,072/312,440)
+Tags 30% (3,509/10,944)
+Posts 20% (250,624/1,248,776)
+Tags 40% (4,387/10,944)
+Users 70% (219,364/312,440)
+Tags 50% (5,703/10,944)
+Users 80% (250,646/312,440)
+Posts 30% (374,731/1,248,776)
+Tags 60% (6,580/10,944)
+ℹ Skipped 3 users with invalid emails
+Users 90% (281,943/312,440)
+Tags 70% (7,896/10,944)
+Users 100% (312,440/312,440)
+✓ Users 312,440 in 0:03, 7 warnings
+Likes 🚀 started (50,000 items)
+Posts 40% (499,777/1,248,776)
+Tags 80% (8,772/10,944)
+Likes 🚀 10% (5,009/50,000)
+Tags 90% (10,088/10,944)
+Likes 🚀 20% (10,021/50,000)
+Tags 100% (10,944/10,944)
+✓ Tags 10,944 in 0:02
+Likes 🚀 30% (15,034/50,000)
+ℹ forked 4 worker children: 968384, 968387, 968390, 968393
+Posts 50% (625,740/1,248,776)
+Likes 🚀 40% (20,044/50,000)
+Likes 🚀 50% (25,065/50,000)
+ℹ Index hint: post_custom_fields is missing index on (name)
+✓ Uploads 35,812 in 0:03
+Likes 🚀 60% (30,078/50,000)
+Posts 60% (749,824/1,248,776)
+Likes 🚀 70% (35,094/50,000)
+Likes 🚀 80% (40,107/50,000)
+ℹ reaped 4 worker children
+Likes 🚀 90% (45,122/50,000)
+Posts 70% (874,533/1,248,776)
+Likes 🚀 100% (50,000/50,000)
+✓ Likes 🚀 50,000 in 0:02
+Posts 80% (1,000,015/1,248,776)
+ℹ Re-checking orphaned uploads
+Posts 90% (1,124,295/1,248,776)
+Posts 100% (1,248,776/1,248,776)
+✓ Posts 1,248,776 in 0:06, 2 errors
+ℹ Slow query in tags lookup (412 ms)
+ℹ Checkpoint written

@@ -1,0 +1,4 @@
+out/*.raw
+out/*.stdout
+out/*.stderr
+/report.json

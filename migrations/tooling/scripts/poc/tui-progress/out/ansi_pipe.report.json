@@ -1,0 +1,56 @@
+{
+  "outcome": "plain_mode",
+  "reason": "stdout is not a tty",
+  "sim_stats": {
+    "steps": {
+      "categories": {
+        "posts": 16,
+        "planned_posts": 15,
+        "achieved_rate": 10.6,
+        "planned_rate": 10.0,
+        "seconds": 1.51
+      },
+      "users": {
+        "posts": 31,
+        "planned_posts": 30,
+        "achieved_rate": 10.3,
+        "planned_rate": 10.0,
+        "seconds": 3.01
+      },
+      "tags": {
+        "posts": 26,
+        "planned_posts": 25,
+        "achieved_rate": 10.4,
+        "planned_rate": 10.0,
+        "seconds": 2.51
+      },
+      "uploads": {
+        "posts": 31,
+        "planned_posts": 30,
+        "achieved_rate": 10.3,
+        "planned_rate": 10.0,
+        "seconds": 3.0
+      },
+      "likes": {
+        "posts": 21,
+        "planned_posts": 20,
+        "achieved_rate": 10.5,
+        "planned_rate": 10.0,
+        "seconds": 2.01
+      },
+      "posts": {
+        "posts": 1176,
+        "planned_posts": 1200,
+        "achieved_rate": 195.9,
+        "planned_rate": 200.0,
+        "seconds": 6.0
+      }
+    },
+    "forks": {
+      "forked": 4,
+      "reaped": 4,
+      "fork_errors": []
+    },
+    "wall_seconds": 9.0
+  }
+}

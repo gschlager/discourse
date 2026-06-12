@@ -1,0 +1,18 @@
+Fetching gem metadata from https://rubygems.org/....
+Resolving dependencies...
+WARN: Unresolved or ambiguous specs during Gem::Specification.reset:
+      psych (>= 4.0.0)
+      Available/installed versions of this gem:
+      - 5.4.0
+      - 5.2.2
+WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'
+Please report a bug if this causes problems.
+ℹ simulation started (tty-progressbar)
+Categories      [█████████████████░] 96% 4139/4281  1s
+Categories      [██████████████████] 100% 4281/4281  1s
+Users           [██████████████████] 100% 312440/312440  3s  ⚠ 7 warnings
+Posts           [██████████████░░░░] 79% 996016/1248776  4s  ✗ 1 errors
+Tags            [██████████████████] 100% 10944/10944  2s
+Uploads         :spinner 35812  3s
+Likes 🚀         [██████████████████] 100% 50000/50000  2s
+^CINTERRUPT-PATH-OK

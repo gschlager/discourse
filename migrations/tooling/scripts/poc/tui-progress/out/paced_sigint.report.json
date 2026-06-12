@@ -1,0 +1,50 @@
+{
+  "outcome": "interrupt",
+  "loop_mode": "paced",
+  "fps": 30,
+  "ruby": "ruby 3.4.9 (2026-03-11 revision 76cca827ab) +YJIT +PRISM [x86_64-linux]",
+  "gems": {
+    "bubbletea": "0.1.4",
+    "bubbles": "0.1.1",
+    "lipgloss": "0.2.2",
+    "harmonica": "0.1.1"
+  },
+  "stdout_tty": true,
+  "terminal_size": [
+    110,
+    32
+  ],
+  "resize_events": 1,
+  "sent": {
+    "StepStartedMsg": 6,
+    "StepProgressMsg": 518,
+    "NoticeMsg": 3,
+    "StepFinishedMsg": 3
+  },
+  "received": {
+    "StepStartedMsg": 6,
+    "StepProgressMsg": 512,
+    "NoticeMsg": 4,
+    "StepFinishedMsg": 3
+  },
+  "lost_messages": 5,
+  "latency_ms": {
+    "count": 512,
+    "min": 0.03,
+    "avg": 10.76,
+    "max": 27.39,
+    "over_100ms": 0
+  },
+  "view_calls": 130,
+  "cpu_phases": {},
+  "sim_stats": null,
+  "stty_restored": true,
+  "lipgloss_sample": "\"\\e[33mx\\e[0m\"",
+  "widths": {
+    "✓": 1,
+    "⚠": 1,
+    "✗": 1,
+    "🚀": 2,
+    "Likes 🚀": 8
+  }
+}

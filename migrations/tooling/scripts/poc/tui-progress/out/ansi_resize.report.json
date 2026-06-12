@@ -1,0 +1,93 @@
+{
+  "outcome": "normal",
+  "loop_mode": "ansi",
+  "ruby": "ruby 3.4.9 (2026-03-11 revision 76cca827ab) +YJIT +PRISM [x86_64-linux]",
+  "gems": {},
+  "stdout_tty": true,
+  "lost_messages": 0,
+  "latency_ms": {
+    "count": 1294,
+    "min": 0.02,
+    "avg": 16.57,
+    "max": 33.09,
+    "over_100ms": 0,
+    "spike_offsets_s": null
+  },
+  "slow_frames": null,
+  "slow_writes": null,
+  "slow_sections": null,
+  "frames": 201,
+  "writes": 201,
+  "cpu_phases": {
+    "active": {
+      "wall_s": 9.21,
+      "cpu_s": 0.27,
+      "cpu_pct": 2.9
+    },
+    "idle_tail": {
+      "wall_s": 3.01,
+      "cpu_s": 0.0,
+      "cpu_pct": 0.0
+    }
+  },
+  "sim_stats": {
+    "steps": {
+      "categories": {
+        "posts": 16,
+        "planned_posts": 15,
+        "achieved_rate": 10.6,
+        "planned_rate": 10.0,
+        "seconds": 1.51
+      },
+      "users": {
+        "posts": 31,
+        "planned_posts": 30,
+        "achieved_rate": 10.3,
+        "planned_rate": 10.0,
+        "seconds": 3.01
+      },
+      "tags": {
+        "posts": 26,
+        "planned_posts": 25,
+        "achieved_rate": 10.4,
+        "planned_rate": 10.0,
+        "seconds": 2.5
+      },
+      "uploads": {
+        "posts": 31,
+        "planned_posts": 30,
+        "achieved_rate": 10.3,
+        "planned_rate": 10.0,
+        "seconds": 3.01
+      },
+      "likes": {
+        "posts": 21,
+        "planned_posts": 20,
+        "achieved_rate": 10.5,
+        "planned_rate": 10.0,
+        "seconds": 2.0
+      },
+      "posts": {
+        "posts": 1169,
+        "planned_posts": 1200,
+        "achieved_rate": 194.7,
+        "planned_rate": 200.0,
+        "seconds": 6.0
+      }
+    },
+    "forks": {
+      "forked": 4,
+      "reaped": 4,
+      "fork_errors": []
+    },
+    "wall_seconds": 9.0
+  },
+  "stty_restored": true,
+  "widths": {
+    "✓": 1,
+    "⚠": 1,
+    "✗": 1,
+    "🚀": 2,
+    "Likes 🚀": 8
+  }
+}

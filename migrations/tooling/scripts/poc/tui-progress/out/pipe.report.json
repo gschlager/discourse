@@ -1,0 +1,114 @@
+{
+  "outcome": "normal",
+  "loop_mode": "paced",
+  "fps": 30,
+  "ruby": "ruby 3.4.9 (2026-03-11 revision 76cca827ab) +YJIT +PRISM [x86_64-linux]",
+  "gems": {
+    "bubbletea": "0.1.4",
+    "bubbles": "0.1.1",
+    "lipgloss": "0.2.2",
+    "harmonica": "0.1.1"
+  },
+  "stdout_tty": false,
+  "terminal_size": [
+    80,
+    24
+  ],
+  "resize_events": 1,
+  "sent": {
+    "StepStartedMsg": 6,
+    "StepProgressMsg": 979,
+    "NoticeMsg": 8,
+    "StepFinishedMsg": 6,
+    "SimDoneMsg": 1
+  },
+  "received": {
+    "StepStartedMsg": 6,
+    "StepProgressMsg": 979,
+    "NoticeMsg": 9,
+    "StepFinishedMsg": 6,
+    "SimDoneMsg": 1
+  },
+  "lost_messages": -1,
+  "latency_ms": {
+    "count": 979,
+    "min": 0.04,
+    "avg": 12.54,
+    "max": 34.35,
+    "over_100ms": 0
+  },
+  "view_calls": 368,
+  "cpu_phases": {
+    "active": {
+      "wall_s": 9.37,
+      "cpu_s": 2.8,
+      "cpu_pct": 29.9
+    },
+    "idle_tail": {
+      "wall_s": 3.01,
+      "cpu_s": 0.15,
+      "cpu_pct": 5.0
+    }
+  },
+  "sim_stats": {
+    "steps": {
+      "categories": {
+        "posts": 16,
+        "planned_posts": 15,
+        "achieved_rate": 10.5,
+        "planned_rate": 10.0,
+        "seconds": 1.53
+      },
+      "users": {
+        "posts": 31,
+        "planned_posts": 30,
+        "achieved_rate": 10.3,
+        "planned_rate": 10.0,
+        "seconds": 3.01
+      },
+      "tags": {
+        "posts": 26,
+        "planned_posts": 25,
+        "achieved_rate": 10.4,
+        "planned_rate": 10.0,
+        "seconds": 2.5
+      },
+      "uploads": {
+        "posts": 31,
+        "planned_posts": 30,
+        "achieved_rate": 10.3,
+        "planned_rate": 10.0,
+        "seconds": 3.02
+      },
+      "likes": {
+        "posts": 21,
+        "planned_posts": 20,
+        "achieved_rate": 10.4,
+        "planned_rate": 10.0,
+        "seconds": 2.03
+      },
+      "posts": {
+        "posts": 854,
+        "planned_posts": 1200,
+        "achieved_rate": 142.3,
+        "planned_rate": 200.0,
+        "seconds": 6.0
+      }
+    },
+    "forks": {
+      "forked": 4,
+      "reaped": 4,
+      "fork_errors": []
+    },
+    "wall_seconds": 9.15
+  },
+  "stty_restored": null,
+  "lipgloss_sample": "\"x\"",
+  "widths": {
+    "✓": 1,
+    "⚠": 1,
+    "✗": 1,
+    "🚀": 2,
+    "Likes 🚀": 8
+  }
+}

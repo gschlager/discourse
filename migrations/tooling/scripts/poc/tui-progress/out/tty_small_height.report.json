@@ -1,0 +1,82 @@
+{
+  "outcome": "normal",
+  "loop_mode": "tty-progressbar",
+  "ruby": "ruby 3.4.9 (2026-03-11 revision 76cca827ab) +YJIT +PRISM [x86_64-linux]",
+  "gems": {
+    "tty-progressbar": "0.18.3",
+    "tty-cursor": "0.7.1",
+    "tty-screen": "0.8.2",
+    "unicode-display_width": "2.6.0",
+    "strings-ansi": "0.2.0"
+  },
+  "stdout_tty": true,
+  "sink_call_ms": {
+    "count": 1274,
+    "avg": 0.312,
+    "max": 19.7
+  },
+  "cpu_phases": {
+    "active": {
+      "wall_s": 9.01,
+      "cpu_s": 0.42,
+      "cpu_pct": 4.7
+    },
+    "idle_tail": {
+      "wall_s": 3.0,
+      "cpu_s": 0.0,
+      "cpu_pct": 0.0
+    }
+  },
+  "sim_stats": {
+    "steps": {
+      "categories": {
+        "posts": 16,
+        "planned_posts": 15,
+        "achieved_rate": 10.2,
+        "planned_rate": 10.0,
+        "seconds": 1.57
+      },
+      "users": {
+        "posts": 31,
+        "planned_posts": 30,
+        "achieved_rate": 10.1,
+        "planned_rate": 10.0,
+        "seconds": 3.06
+      },
+      "tags": {
+        "posts": 26,
+        "planned_posts": 25,
+        "achieved_rate": 10.3,
+        "planned_rate": 10.0,
+        "seconds": 2.53
+      },
+      "uploads": {
+        "posts": 31,
+        "planned_posts": 30,
+        "achieved_rate": 10.3,
+        "planned_rate": 10.0,
+        "seconds": 3.02
+      },
+      "likes": {
+        "posts": 21,
+        "planned_posts": 20,
+        "achieved_rate": 10.4,
+        "planned_rate": 10.0,
+        "seconds": 2.02
+      },
+      "posts": {
+        "posts": 1128,
+        "planned_posts": 1200,
+        "achieved_rate": 188.0,
+        "planned_rate": 200.0,
+        "seconds": 6.0
+      }
+    },
+    "forks": {
+      "forked": 4,
+      "reaped": 4,
+      "fork_errors": []
+    },
+    "wall_seconds": 9.01
+  }
+}

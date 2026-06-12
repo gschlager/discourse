@@ -1,0 +1,20 @@
+{
+  "outcome": "interrupt",
+  "loop_mode": "tty-progressbar",
+  "ruby": "ruby 3.4.9 (2026-03-11 revision 76cca827ab) +YJIT +PRISM [x86_64-linux]",
+  "gems": {
+    "tty-progressbar": "0.18.3",
+    "tty-cursor": "0.7.1",
+    "tty-screen": "0.8.2",
+    "unicode-display_width": "2.6.0",
+    "strings-ansi": "0.2.0"
+  },
+  "stdout_tty": true,
+  "sink_call_ms": {
+    "count": 1043,
+    "avg": 0.355,
+    "max": 20.8
+  },
+  "cpu_phases": {},
+  "sim_stats": null
+}

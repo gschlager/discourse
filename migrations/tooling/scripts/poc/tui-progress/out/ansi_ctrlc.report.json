@@ -1,0 +1,31 @@
+{
+  "outcome": "interrupt",
+  "loop_mode": "ansi",
+  "ruby": "ruby 3.4.9 (2026-03-11 revision 76cca827ab) +YJIT +PRISM [x86_64-linux]",
+  "gems": {},
+  "stdout_tty": true,
+  "lost_messages": 0,
+  "latency_ms": {
+    "count": 1058,
+    "min": 0.06,
+    "avg": 15.73,
+    "max": 33.41,
+    "over_100ms": 0,
+    "spike_offsets_s": null
+  },
+  "slow_frames": null,
+  "slow_writes": null,
+  "slow_sections": null,
+  "frames": 156,
+  "writes": 156,
+  "cpu_phases": {},
+  "sim_stats": null,
+  "stty_restored": true,
+  "widths": {
+    "✓": 1,
+    "⚠": 1,
+    "✗": 1,
+    "🚀": 2,
+    "Likes 🚀": 8
+  }
+}
