@@ -6,28 +6,28 @@
   "stdout_tty": true,
   "lost_messages": 0,
   "latency_ms": {
-    "count": 1099,
-    "min": 0.05,
-    "avg": 15.63,
-    "max": 33.14,
+    "count": 1101,
+    "min": 0.03,
+    "avg": 51.28,
+    "max": 99.86,
     "over_100ms": 0,
     "spike_offsets_s": null
   },
   "slow_frames": null,
   "slow_writes": null,
   "slow_sections": null,
-  "frames": 225,
-  "writes": 225,
+  "frames": 79,
+  "writes": 79,
   "cpu_phases": {
     "active": {
-      "wall_s": 8.01,
-      "cpu_s": 0.27,
-      "cpu_pct": 3.4
+      "wall_s": 8.02,
+      "cpu_s": 0.17,
+      "cpu_pct": 2.1
     },
     "idle_tail": {
-      "wall_s": 3.02,
-      "cpu_s": 0.0,
-      "cpu_pct": 0.0
+      "wall_s": 3.0,
+      "cpu_s": 0.01,
+      "cpu_pct": 0.3
     }
   },
   "sim_stats": {
@@ -35,23 +35,23 @@
       "categories": {
         "posts": 16,
         "planned_posts": 15,
-        "achieved_rate": 10.6,
+        "achieved_rate": 10.5,
         "planned_rate": 10.0,
-        "seconds": 1.51
+        "seconds": 1.52
       },
       "users": {
         "posts": 31,
         "planned_posts": 30,
         "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 3.01
+        "seconds": 3.02
       },
       "tags": {
         "posts": 26,
         "planned_posts": 25,
         "achieved_rate": 10.4,
         "planned_rate": 10.0,
-        "seconds": 2.51
+        "seconds": 2.5
       },
       "uploads": {
         "posts": 31,
@@ -68,9 +68,9 @@
         "seconds": 2.0
       },
       "posts": {
-        "posts": 974,
+        "posts": 976,
         "planned_posts": 1000,
-        "achieved_rate": 194.8,
+        "achieved_rate": 195.1,
         "planned_rate": 200.0,
         "seconds": 5.0
       }

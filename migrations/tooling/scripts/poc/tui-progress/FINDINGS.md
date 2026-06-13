@@ -135,9 +135,15 @@ Cooked mode throughout — no raw mode, no input reader.
 - **Signals**: Ctrl-C through the pty line discipline is a real SIGINT; the converter's
   `SignalException` path needs no translation. Exit 130, terminal restored. The only
   artifact is the terminal's own `^C` echo (cosmetic; `stty -echoctl` if we care).
-- **Performance**: producer reached 195/200 updates/sec; latency 16 ms avg / 33 ms max,
-  zero >100 ms; CPU 2.7% active / ~0% idle — an order of magnitude below bubbletea
-  (no cgo polling, no per-event JSON, frame-skip when nothing changed).
+- **Performance**: producer reached 195/200 updates/sec; CPU ~2% active / ~0% idle —
+  an order of magnitude below bubbletea (no cgo polling, no per-event JSON, frame-skip
+  when nothing changed). At the default 10 fps, latency is frame-quantized at ~50 ms
+  avg / ~100 ms max and the run does ~80 terminal writes; at 30 fps it was 16/33 ms and
+  ~140 writes. 10 fps is the readability default (below), not a throughput limit.
+- **Render rate & spacing (readability)**: renders at 10 fps with a ~6/s spinner and a
+  blank line between rows. 30 fps animated too busily to read, and packed rows were hard
+  to scan; both are env/constant knobs (`POC_FPS`, `SPINNER_RATE`). Spacer lines are
+  counted as real region rows, so the resize/cursor math is unaffected.
 - **Non-TTY**: detects `!$stdout.tty?` and exits 2 with a clear message.
 - **Forks, resize, narrow terminals**: same scenarios as bubbletea, all clean.
 - One real-implementation note: use the `unicode-display_width` gem instead of Reline
@@ -353,7 +359,9 @@ user data, so width handling must go through `unicode-display_width` everywhere.
 ## Measurements side by side
 
 Full simulation (~12 s, 6 steps, ~1,400 updates incl. a 200/s producer, 4 mid-run
-forks), 110×32 PTY, 30 fps. From `out/*.report.json`.
+forks), 110×32 PTY. From `out/*.report.json`. **All four columns measured at 30 fps for
+parity** — the ANSI POC now defaults to 10 fps for readability, which only lowers its
+CPU and write count further (latency rises to the frame-quantized ~50/100 ms).
 
 | | bubbletea stock loop | bubbletea paced loop | tty-progressbar Multi | ANSI fallback |
 |---|---|---|---|---|

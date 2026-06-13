@@ -6,28 +6,28 @@
   "stdout_tty": true,
   "lost_messages": 0,
   "latency_ms": {
-    "count": 1086,
-    "min": 0.04,
-    "avg": 16.47,
-    "max": 33.06,
+    "count": 1098,
+    "min": 0.07,
+    "avg": 52.28,
+    "max": 99.62,
     "over_100ms": 0,
     "spike_offsets_s": null
   },
   "slow_frames": null,
   "slow_writes": null,
   "slow_sections": null,
-  "frames": 227,
-  "writes": 227,
+  "frames": 79,
+  "writes": 79,
   "cpu_phases": {
     "active": {
-      "wall_s": 8.01,
-      "cpu_s": 0.31,
-      "cpu_pct": 3.9
+      "wall_s": 8.02,
+      "cpu_s": 0.2,
+      "cpu_pct": 2.5
     },
     "idle_tail": {
-      "wall_s": 3.01,
-      "cpu_s": 0.02,
-      "cpu_pct": 0.7
+      "wall_s": 3.0,
+      "cpu_s": 0.0,
+      "cpu_pct": 0.0
     }
   },
   "sim_stats": {
@@ -44,7 +44,7 @@
         "planned_posts": 30,
         "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 3.01
+        "seconds": 3.02
       },
       "tags": {
         "posts": 26,
@@ -68,9 +68,9 @@
         "seconds": 2.0
       },
       "posts": {
-        "posts": 961,
+        "posts": 973,
         "planned_posts": 1000,
-        "achieved_rate": 192.2,
+        "achieved_rate": 194.6,
         "planned_rate": 200.0,
         "seconds": 5.0
       }

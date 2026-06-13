@@ -7,7 +7,7 @@
 #
 # Env knobs:
 #   POC_REPORT=path   where to write the JSON report (default report.json)
-#   POC_FPS=n         frames per second (default 30)
+#   POC_FPS=n         frames per second (default 10 — calm enough to read)
 #   POC_NO_FORK=1     skip the mid-run fork scenario
 
 require "json"
@@ -67,10 +67,11 @@ end
 # is therefore frame-rate bound by construction.
 class AnsiRenderer
   SPINNER = %w[⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏].freeze
+  SPINNER_RATE = 6 # spinner frames/sec — gentle, independent of the render rate
 
   attr_reader :latency, :frames, :writes, :cpu_marks, :sim_stats
 
-  def initialize(fps: 30)
+  def initialize(fps: 10)
     @fps = fps
     @queue = Thread::Queue.new
     @steps = {}
@@ -229,13 +230,19 @@ out = +""
 out << Ansi.up(@live_count - 1) if @live_count > 1
 out << "\r"
 
-    permanent.each { |line| out << Ansi::EL_ALL << fit(line) << "\r\n" }
-    live.each_with_index do |line, i|
+    # A blank spacer line after every content row makes the display readable.
+    # Spacers are real rows, so they count toward @live_count for the cursor math.
+    permanent.each do |line|
+      out << Ansi::EL_ALL << fit(line) << "\r\n"
+      out << Ansi::EL_ALL << "\r\n"
+    end
+    live_rows = space_out(live)
+    live_rows.each_with_index do |line, i|
       out << Ansi::EL_ALL << fit(line)
-      out << "\r\n" if i < live.size - 1
+      out << "\r\n" if i < live_rows.size - 1
     end
 
-    leftover = @live_count - live.size
+    leftover = @live_count - live_rows.size
     leftover = 0 if leftover.negative?
     if leftover > 0
       leftover.times { out << "\r\n" << Ansi::EL_ALL }
@@ -253,8 +260,13 @@ if tw2 - tw0 > 0.05
 end
     @writes += 1
     @frames += 1
-    @live_count = live.size
+    @live_count = live_rows.size
     @last_live = live
+  end
+
+  # Interleave a blank line between content rows (no trailing blank).
+  def space_out(rows)
+    rows.flat_map.with_index { |row, i| i < rows.size - 1 ? [row, ""] : [row] }
   end
 
   # Two columns short of the window: WINCH arrives in small steps during a
@@ -296,7 +308,7 @@ end
   # Counting phase: total is being computed, no work yet — spinner only, no count.
   def counting_line(s)
     line = +title_col(s[:title], "  ")
-    line << "#{SPINNER[(mono * 12).to_i % SPINNER.size]} #{Ansi::DIM}counting…#{Ansi::RESET}"
+    line << "#{spinner} #{Ansi::DIM}counting…#{Ansi::RESET}"
     line << "  #{fmt_duration(mono - s[:started_at])}"
     line
   end
@@ -308,7 +320,7 @@ end
       pct = [s[:current].to_f / s[:total], 1.0].min
       line << bar(pct) << "  #{fmt_count(s[:current])}/#{fmt_count(s[:total])}"
     else
-      line << "#{SPINNER[(mono * 12).to_i % SPINNER.size]} #{fmt_count(s[:current])}"
+      line << "#{spinner} #{fmt_count(s[:current])}"
     end
     line << "  #{fmt_duration(elapsed)}"
     if s[:total] && s[:projection] > 0 && elapsed > 1
@@ -334,6 +346,7 @@ end
     line
   end
 
+  def spinner = SPINNER[(mono * SPINNER_RATE).to_i % SPINNER.size]
   def fmt_count(n) = n.to_s.gsub(/\B(?=(\d{3})+(?!\d))/, ",")
   def fmt_duration(seconds) = format("%d:%02d", seconds / 60, seconds % 60)
 end
@@ -426,7 +439,7 @@ def stty_state
   state.empty? ? nil : state
 end
 
-renderer = AnsiRenderer.new(fps: ENV.fetch("POC_FPS", "30").to_i)
+renderer = AnsiRenderer.new(fps: ENV.fetch("POC_FPS", "10").to_i)
 stty_before = stty_state
 outcome = "normal"
 

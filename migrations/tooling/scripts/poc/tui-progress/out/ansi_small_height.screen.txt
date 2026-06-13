@@ -1,16 +1,31 @@
-ℹ simulation started (ansi fallback, fps=30)
+ℹ simulation started (ansi fallback, fps=10)
+
 ℹ Calculating max progress for posts, this may take a while…
+
 ℹ Skipped 3 users with invalid emails
+
 ✓ Categories      4,281/4,281  0:01
+
 ℹ Index hint: post_custom_fields is missing index on (name)
+
 ✓ Users           312,440/312,440  0:03  ⚠ 7 warnings
+
 ✓ Tags            10,944/10,944  0:02
-ℹ forked 4 worker children: 1047187, 1047190, 1047193, 1047196
+
+ℹ forked 4 worker children: 1066623, 1066626, 1066629, 1066632
+
 ℹ Re-checking orphaned uploads
+
 ✓ Uploads         35,812  0:03
+
 ℹ reaped 4 worker children
-✓ Likes 🚀        50,000/50,000  0:02
+
+✓ Likes 🚀        50,000/50,000  0:01
+
 ℹ Slow query in tags lookup (412 ms)
+
 ℹ Checkpoint written
-✓ Posts           1,248,776/1,248,776  0:04  ✗ 2 errors
+
+✓ Posts           1,248,776/1,248,776  0:05  ✗ 2 errors
+
 
