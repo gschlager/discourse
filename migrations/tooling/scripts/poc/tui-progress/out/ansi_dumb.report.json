@@ -15,7 +15,7 @@
         "planned_posts": 30,
         "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 3.01
+        "seconds": 3.02
       },
       "tags": {
         "posts": 26,
@@ -29,7 +29,7 @@
         "planned_posts": 30,
         "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 3.0
+        "seconds": 3.01
       },
       "likes": {
         "posts": 21,
@@ -39,9 +39,9 @@
         "seconds": 2.0
       },
       "posts": {
-        "posts": 975,
+        "posts": 972,
         "planned_posts": 1000,
-        "achieved_rate": 195.0,
+        "achieved_rate": 194.3,
         "planned_rate": 200.0,
         "seconds": 5.0
       }

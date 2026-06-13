@@ -60,6 +60,13 @@ module Ansi
     end
     out << RESET
   end
+
+  # Pad to a display width (ignoring SGR codes / counting wide chars as 2).
+  def self.pad(str, width, align = :left)
+    gap = width - width(str)
+    return str if gap <= 0
+    align == :right ? "#{" " * gap}#{str}" : "#{str}#{" " * gap}"
+  end
 end
 
 # Implements the sim harness sink interface. Producers push events into a
@@ -68,10 +75,18 @@ end
 class AnsiRenderer
   SPINNER = %w[⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏].freeze
   SPINNER_RATE = 6 # spinner frames/sec — gentle, independent of the render rate
+  BAR_W = 13
+  PROGRESS_W = BAR_W + 5 # bar + " 100%"
+  COLS = %i[progress count elapsed eta rate].freeze # right-aligned except progress/eta
 
   attr_reader :latency, :frames, :writes, :cpu_marks, :sim_stats
 
-  def initialize(fps: 10)
+  # max_total: the largest determinate step total, known up front (the converter
+  # computes max_progress per step). Used to RESERVE the count column wide enough
+  # so numbers right-align and the column never has to grow mid-run — which also
+  # keeps finished rows (frozen in scrollback the moment they scroll past the live
+  # region, so unrealignable) aligned with everything else.
+  def initialize(fps: 10, max_total: nil)
     @fps = fps
     @queue = Thread::Queue.new
     @steps = {}
@@ -85,6 +100,11 @@ class AnsiRenderer
     @sim_stats = nil
     @resize_pending = false
     @cols = ($stdout.winsize[1] rescue 80)
+    # Column widths grow monotonically (never shrink → no mid-run reflow). Count
+    # and progress are reserved up front when we know a determinate total exists.
+    reserved_count = max_total ? Ansi.width("#{fmt_count(max_total)}/#{fmt_count(max_total)}") : 0
+    @col_w = { progress: (max_total ? PROGRESS_W : 0), count: reserved_count,
+               elapsed: 4, eta: 0, rate: 0 }
   end
 
   # --- sink interface (called from producer threads) ---
@@ -197,7 +217,11 @@ class AnsiRenderer
         _, id, current, warnings, errors = event
         if (s = @steps[id])
           s.merge!(current: current, warnings: warnings, errors: errors, state: :done)
-          @pending_permanent << finished_line(s, mono - s[:started_at])
+          count = s[:total] ? "#{fmt_count(current)}/#{fmt_count(s[:total])}" : fmt_count(current)
+          elapsed = mono - s[:started_at]
+          @col_w[:count] = [@col_w[:count], Ansi.width(count)].max
+          @col_w[:elapsed] = [@col_w[:elapsed], Ansi.width(fmt_duration(elapsed))].max
+          @pending_permanent << finished_line(s, elapsed, count)
         end
       when :notice
         @pending_permanent << "#{Ansi::DIM}#{event[1]}#{Ansi::RESET}"
@@ -218,7 +242,7 @@ def repaint(final: false)
   tr0 = mono
   permanent = @pending_permanent
   @pending_permanent = []
-  live = final ? [] : @steps.values.select { |s| %i[running counting].include?(s[:state]) }.map { |s| live_line(s) }
+  live = final ? [] : format_live(@steps.values.select { |s| %i[running counting].include?(s[:state]) })
   tr1 = mono
   (@slow_sections ||= []) << { sect: "live_build", ms: ((tr1 - tr0) * 1000).round(1) } if tr1 - tr0 > 0.05
 
@@ -300,49 +324,65 @@ end
     "#{Ansi::BAR_FULL}#{"█" * filled}#{Ansi::BAR_EMPTY}#{"░" * (width - filled)}#{Ansi::RESET} #{format("%3.0f%%", pct * 100)}"
   end
 
-  def live_line(s)
-    return counting_line(s) if s[:state] == :counting
-    running_line(s)
+  # Build the live rows as a table: per-field strings, then column widths grown
+  # across all visible rows (and never shrunk), then each row assembled with
+  # width-aware padding so the columns line up.
+  def format_live(states)
+    return [] if states.empty?
+    rows = states.map { |s| row_fields(s) }
+    COLS.each { |c| @col_w[c] = [@col_w[c], *rows.map { |r| Ansi.width(r[c]) }].max }
+    rows.map do |r|
+      cells = COLS.filter_map do |c|
+        next if @col_w[c].zero?
+        Ansi.pad(r[c], @col_w[c], %i[progress eta].include?(c) ? :left : :right)
+      end
+      line = +r[:title_col]
+      line << cells.join("  ")
+      line << r[:annot] unless r[:annot].empty?
+      line
+    end
   end
 
-  # Counting phase: total is being computed, no work yet — spinner only, no count.
-  def counting_line(s)
-    line = +title_col(s[:title], "  ")
-    line << "#{spinner} #{Ansi::DIM}counting…#{Ansi::RESET}"
-    line << "  #{fmt_duration(mono - s[:started_at])}"
-    line
-  end
-
-  def running_line(s)
-    line = +title_col(s[:title], "  ")
+  # One running/counting step as a hash of column strings (blank where absent).
+  def row_fields(s)
     elapsed = mono - s[:started_at]
+    f = { title_col: title_col(s[:title], "  "), progress: "", count: "",
+          elapsed: "", eta: "", rate: "", annot: "" }
+    if s[:state] == :counting # total being computed, no work yet → spinner, no count
+      f[:progress] = "#{spinner} #{Ansi::DIM}counting…#{Ansi::RESET}"
+      f[:elapsed] = fmt_duration(elapsed)
+      return f
+    end
     if s[:total]
       pct = [s[:current].to_f / s[:total], 1.0].min
-      line << bar(pct) << "  #{fmt_count(s[:current])}/#{fmt_count(s[:total])}"
-    else
-      line << "#{spinner} #{fmt_count(s[:current])}"
+      f[:progress] = bar(pct)
+      f[:count] = "#{fmt_count(s[:current])}/#{fmt_count(s[:total])}"
+      if s[:projection] > 0 && elapsed > 1
+        remaining = [elapsed * (s[:total] / s[:projection] - 1), 0].max
+        f[:eta] = "#{Ansi::DIM}ETA #{fmt_duration(remaining)}#{Ansi::RESET}"
+      end
+    else # indeterminate: spinner + running count live in the progress column
+      f[:progress] = "#{spinner} #{fmt_count(s[:current])}"
     end
-    line << "  #{fmt_duration(elapsed)}"
-    if s[:total] && s[:projection] > 0 && elapsed > 1
-      remaining = [elapsed * (s[:total] / s[:projection] - 1), 0].max
-      line << "#{Ansi::DIM}  ETA #{fmt_duration(remaining)}#{Ansi::RESET}"
-    end
+    f[:elapsed] = fmt_duration(elapsed)
     # Throughput: the only speed signal for indeterminate steps, a slowdown
     # detector for determinate ones. Average since work start — stable, no jitter.
-    if elapsed > 0.5 && s[:current] > 0
-      line << "#{Ansi::DIM}  #{fmt_count((s[:current] / elapsed).round)}/s#{Ansi::RESET}"
-    end
-    line << "#{Ansi::YELLOW}  ⚠ #{s[:warnings]} warnings#{Ansi::RESET}" if s[:warnings] > 0
-    line << "#{Ansi::RED}  ✗ #{s[:errors]} errors#{Ansi::RESET}" if s[:errors] > 0
-    line
+    f[:rate] = "#{Ansi::DIM}#{fmt_count((s[:current] / elapsed).round)}/s#{Ansi::RESET}" if elapsed > 0.5 && s[:current] > 0
+    ann = +""
+    ann << "  #{Ansi::YELLOW}⚠ #{s[:warnings]} warnings#{Ansi::RESET}" if s[:warnings] > 0
+    ann << "  #{Ansi::RED}✗ #{s[:errors]} errors#{Ansi::RESET}" if s[:errors] > 0
+    f[:annot] = ann
+    f
   end
 
-  def finished_line(s, elapsed)
+  # Finished steps collapse: no bar, count right-aligned to the reserved width so
+  # the column matches every other finished row even though this one is frozen.
+  def finished_line(s, elapsed, count)
     line = +title_col(s[:title], "#{Ansi::GREEN}✓#{Ansi::RESET} ")
-    line << (s[:total] ? "#{fmt_count(s[:current])}/#{fmt_count(s[:total])}" : fmt_count(s[:current]))
-    line << "#{Ansi::DIM}  #{fmt_duration(elapsed)}#{Ansi::RESET}"
-    line << "#{Ansi::YELLOW}  ⚠ #{s[:warnings]} warnings#{Ansi::RESET}" if s[:warnings] > 0
-    line << "#{Ansi::RED}  ✗ #{s[:errors]} errors#{Ansi::RESET}" if s[:errors] > 0
+    line << Ansi.pad(count, @col_w[:count], :right)
+    line << "#{Ansi::DIM}  #{Ansi.pad(fmt_duration(elapsed), @col_w[:elapsed], :right)}#{Ansi::RESET}"
+    line << "  #{Ansi::YELLOW}⚠ #{s[:warnings]} warnings#{Ansi::RESET}" if s[:warnings] > 0
+    line << "  #{Ansi::RED}✗ #{s[:errors]} errors#{Ansi::RESET}" if s[:errors] > 0
     line
   end
 
@@ -439,7 +479,10 @@ def stty_state
   state.empty? ? nil : state
 end
 
-renderer = AnsiRenderer.new(fps: ENV.fetch("POC_FPS", "10").to_i)
+# The converter knows its steps up front and computes each max_progress, so the
+# reporter can reserve the count column for the largest total. Mirror that here.
+max_total = TuiPoc::Simulation::STEPS.filter_map { |s| s[:total] }.max
+renderer = AnsiRenderer.new(fps: ENV.fetch("POC_FPS", "10").to_i, max_total: max_total)
 stty_before = stty_state
 outcome = "normal"
 

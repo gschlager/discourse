@@ -6,12 +6,14 @@
   "stdout_tty": true,
   "lost_messages": 0,
   "latency_ms": {
-    "count": 1106,
-    "min": 0.03,
-    "avg": 51.85,
-    "max": 99.87,
-    "over_100ms": 0,
-    "spike_offsets_s": null
+    "count": 1099,
+    "min": 0.11,
+    "avg": 53.65,
+    "max": 100.59,
+    "over_100ms": 1,
+    "spike_offsets_s": [
+      2.91
+    ]
   },
   "slow_frames": null,
   "slow_writes": null,
@@ -20,9 +22,9 @@
   "writes": 79,
   "cpu_phases": {
     "active": {
-      "wall_s": 8.01,
-      "cpu_s": 0.11,
-      "cpu_pct": 1.4
+      "wall_s": 8.02,
+      "cpu_s": 0.23,
+      "cpu_pct": 2.9
     },
     "idle_tail": {
       "wall_s": 3.0,
@@ -49,16 +51,16 @@
       "tags": {
         "posts": 26,
         "planned_posts": 25,
-        "achieved_rate": 10.4,
+        "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 2.5
+        "seconds": 2.52
       },
       "uploads": {
         "posts": 31,
         "planned_posts": 30,
         "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 3.0
+        "seconds": 3.01
       },
       "likes": {
         "posts": 21,
@@ -68,9 +70,9 @@
         "seconds": 2.0
       },
       "posts": {
-        "posts": 981,
+        "posts": 974,
         "planned_posts": 1000,
-        "achieved_rate": 196.0,
+        "achieved_rate": 194.7,
         "planned_rate": 200.0,
         "seconds": 5.0
       }
@@ -80,7 +82,7 @@
       "reaped": 4,
       "fork_errors": []
     },
-    "wall_seconds": 7.81
+    "wall_seconds": 7.8
   },
   "stty_restored": true,
   "widths": {

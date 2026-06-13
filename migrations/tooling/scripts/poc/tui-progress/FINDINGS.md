@@ -159,37 +159,40 @@ Cooked mode throughout — no raw mode, no input reader.
 
 A step's display is keyed off its total, mirroring the converter: `calculate_max_progress`
 returns a number or `nil`, and the count runs *before* the work (the parallel/serial
-decision in `execute_in_parallel?` needs it). That gives three live states, all in the
-POC and captured below from a real tmux run.
-
-**Determinate (total known): full bar + percent + count + elapsed + ETA + rate.** The
-bar is what makes a stack of concurrent steps scannable at a glance.
+decision in `execute_in_parallel?` needs it). That gives three live states. All rows are
+laid out as a table — fields right-aligned into shared columns — captured below from a
+real tmux run (live region above the finished rows):
 
 ```
-  Posts     ███░░░░░░░░░  26%  328,855/1,248,776  0:01  ETA 0:03  251,921/s
+  Posts           ████░░░░░░░░░  32%    400,240/1,248,776  0:01  ETA 0:03  249,689/s
+  Uploads         ⠸ 33,474                                 0:02             11,940/s
+  Likes 🚀        ███████░░░░░░  50%        25,035/50,000  0:00             25,199/s
+
+✓ Categories              4,281/4,281  0:01
+✓ Users               312,440/312,440  0:03  ⚠ 7 warnings
+✓ Posts           1,248,776/1,248,776  0:05  ✗ 2 errors
 ```
 
-**Counting (total being computed, no work yet): spinner + "counting…", no count.** This
-is the dedicated pre-work phase — it emits the "Calculating max progress…" notice and
-shows a spinner, but no item count, because nothing is being processed yet. When the
-count finishes, the *same row* upgrades to a determinate bar (work elapsed times from
-that point, not from counting start).
+- **Determinate** (total known): full bar + percent + count + elapsed + ETA + rate — the
+  bar makes a stack of concurrent steps scannable at a glance.
+- **Counting** (total being computed, no work yet): spinner + "counting…", no count. The
+  dedicated pre-work phase — emits the "Calculating max progress…" notice; when the
+  count finishes the *same row* upgrades to a bar (work elapsed times from that point):
+  `  Posts           ⠋ counting…`
+- **Indeterminate** (no total ever): spinner + running count (in the progress column) +
+  rate, no bar. Deliberately *not* a pulsing/marquee bar — a moving bar implies a
+  fraction it can't know, and next to real bars the eye reads them as comparable; the
+  spinner says "different — no total" honestly, and rate is the only speed signal left.
 
-```
-  Posts     ⠋ counting…  0:01
-```
-
-**Indeterminate (no total ever): spinner + running count + rate, no ETA, no bar.** The
-deliberate choice not to show a pulsing/marquee bar here: a moving bar implies a
-fraction it can't know, and in a stack next to real bars the eye reads them as
-comparable. The spinner says "different — no total" honestly, and rate is the only
-speed signal possible without a total.
-
-```
-  Uploads   ⠴ 29,950  0:02  11,642/s
-```
-
-Notes on the choices:
+Column alignment (the readability fix):
+- **Numbers right-align** into shared columns; finished rows collapse (no bar) with the
+  count right-aligned right after the title.
+- **The count column is reserved up front** to the widest total (`max_total`, which the
+  converter already computes per step). This is what makes finished rows align: a
+  finished row is frozen in scrollback the moment it scrolls past the live region, so it
+  can't be realigned later — `Categories` (first to finish) lines up with `Posts` (last)
+  only because the column width didn't depend on what had been seen yet. Other columns
+  grow monotonically (never shrink → no mid-run reflow).
 - **Rate** (`items/s`, average since work start — stable, no jitter) is new vs. today's
   ExtendedProgressBar; it doubles as a slowdown detector on determinate bars and is the
   *only* speed cue on indeterminate ones. Easy to drop per step if it reads as clutter.

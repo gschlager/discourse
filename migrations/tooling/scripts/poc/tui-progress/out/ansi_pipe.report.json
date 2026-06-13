@@ -29,19 +29,19 @@
         "planned_posts": 30,
         "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 3.0
+        "seconds": 3.01
       },
       "likes": {
         "posts": 21,
         "planned_posts": 20,
         "achieved_rate": 10.5,
         "planned_rate": 10.0,
-        "seconds": 2.0
+        "seconds": 2.01
       },
       "posts": {
-        "posts": 978,
+        "posts": 967,
         "planned_posts": 1000,
-        "achieved_rate": 195.4,
+        "achieved_rate": 193.3,
         "planned_rate": 200.0,
         "seconds": 5.0
       }
@@ -51,6 +51,6 @@
       "reaped": 4,
       "fork_errors": []
     },
-    "wall_seconds": 7.81
+    "wall_seconds": 7.8
   }
 }
