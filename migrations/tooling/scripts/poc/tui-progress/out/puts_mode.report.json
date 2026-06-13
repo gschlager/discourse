@@ -17,37 +17,39 @@
   "resize_events": 1,
   "sent": {
     "StepStartedMsg": 6,
-    "StepProgressMsg": 949,
+    "StepProgressMsg": 825,
+    "StepCountingMsg": 1,
     "NoticeMsg": 8,
     "StepFinishedMsg": 6,
     "SimDoneMsg": 1
   },
   "received": {
     "StepStartedMsg": 6,
-    "StepProgressMsg": 949,
+    "StepProgressMsg": 825,
+    "StepCountingMsg": 1,
     "NoticeMsg": 9,
     "StepFinishedMsg": 6,
     "SimDoneMsg": 1
   },
   "lost_messages": -1,
   "latency_ms": {
-    "count": 949,
-    "min": 0.06,
-    "avg": 11.94,
-    "max": 31.35,
+    "count": 825,
+    "min": 0.05,
+    "avg": 11.67,
+    "max": 27.8,
     "over_100ms": 0
   },
-  "view_calls": 368,
+  "view_calls": 332,
   "cpu_phases": {
     "active": {
-      "wall_s": 9.34,
-      "cpu_s": 2.81,
-      "cpu_pct": 30.1
+      "wall_s": 8.02,
+      "cpu_s": 2.88,
+      "cpu_pct": 35.9
     },
     "idle_tail": {
-      "wall_s": 3.02,
-      "cpu_s": 0.2,
-      "cpu_pct": 6.6
+      "wall_s": 3.01,
+      "cpu_s": 0.22,
+      "cpu_pct": 7.3
     }
   },
   "sim_stats": {
@@ -55,9 +57,9 @@
       "categories": {
         "posts": 16,
         "planned_posts": 15,
-        "achieved_rate": 10.5,
+        "achieved_rate": 10.6,
         "planned_rate": 10.0,
-        "seconds": 1.53
+        "seconds": 1.51
       },
       "users": {
         "posts": 31,
@@ -78,7 +80,7 @@
         "planned_posts": 30,
         "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 3.01
+        "seconds": 3.02
       },
       "likes": {
         "posts": 21,
@@ -88,11 +90,11 @@
         "seconds": 2.02
       },
       "posts": {
-        "posts": 824,
-        "planned_posts": 1200,
-        "achieved_rate": 137.2,
+        "posts": 700,
+        "planned_posts": 1000,
+        "achieved_rate": 139.9,
         "planned_rate": 200.0,
-        "seconds": 6.0
+        "seconds": 5.0
       }
     },
     "forks": {
@@ -100,7 +102,7 @@
       "reaped": 4,
       "fork_errors": []
     },
-    "wall_seconds": 9.14
+    "wall_seconds": 7.81
   },
   "stty_restored": true,
   "lipgloss_sample": "\"\\e[33mx\\e[0m\"",

@@ -11,14 +11,14 @@
   },
   "stdout_tty": true,
   "sink_call_ms": {
-    "count": 1274,
-    "avg": 0.312,
-    "max": 19.7
+    "count": 1093,
+    "avg": 0.29,
+    "max": 20.1
   },
   "cpu_phases": {
     "active": {
-      "wall_s": 9.01,
-      "cpu_s": 0.42,
+      "wall_s": 7.81,
+      "cpu_s": 0.37,
       "cpu_pct": 4.7
     },
     "idle_tail": {
@@ -32,9 +32,9 @@
       "categories": {
         "posts": 16,
         "planned_posts": 15,
-        "achieved_rate": 10.2,
+        "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 1.57
+        "seconds": 1.56
       },
       "users": {
         "posts": 31,
@@ -62,14 +62,14 @@
         "planned_posts": 20,
         "achieved_rate": 10.4,
         "planned_rate": 10.0,
-        "seconds": 2.02
+        "seconds": 2.03
       },
       "posts": {
-        "posts": 1128,
-        "planned_posts": 1200,
-        "achieved_rate": 188.0,
+        "posts": 946,
+        "planned_posts": 1000,
+        "achieved_rate": 189.1,
         "planned_rate": 200.0,
-        "seconds": 6.0
+        "seconds": 5.0
       }
     },
     "forks": {
@@ -77,6 +77,6 @@
       "reaped": 4,
       "fork_errors": []
     },
-    "wall_seconds": 9.01
+    "wall_seconds": 7.81
   }
 }

@@ -9,16 +9,16 @@ WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'
 Please report a bug if this causes problems.
 ℹ simulation started (loop=paced, fps=30)
 ℹ Calculating max progress for posts, this may take a while…
-✓ Categories      4,281/4,281  0:01
 ℹ Skipped 3 users with invalid emails
+✓ Categories      4,281/4,281  0:01
+ℹ Index hint: post_custom_fields is missing index on (name)
 ✓ Users           312,440/312,440  0:03  ⚠ 7 warnings
 ✓ Tags            10,944/10,944  0:02
-ℹ forked 4 worker children: 902702, 902705, 902708, 902711
-ℹ Index hint: post_custom_fields is missing index on (name)
+ℹ forked 4 worker children: 1046884, 1046887, 1046890, 1046893
+ℹ Re-checking orphaned uploads
 ✓ Uploads         35,812  0:03
 ℹ reaped 4 worker children
 ✓ Likes 🚀        50,000/50,000  0:02
-ℹ Re-checking orphaned uploads
-✓ Posts           1,248,776/1,248,776  0:06  ✗ 2 errors
 ℹ Slow query in tags lookup (412 ms)
 ℹ Checkpoint written
+✓ Posts           1,248,776/1,248,776  0:05  ✗ 2 errors

@@ -87,6 +87,7 @@ class AnsiRenderer
   end
 
   # --- sink interface (called from producer threads) ---
+  def step_counting(id, title) = @queue << [:counting, id, title]
   def step_started(id, title, total) = @queue << [:started, id, title, total]
   def step_progress(id, current, warnings, errors, posted_at) = @queue << [:progress, id, current, warnings, errors, posted_at]
   def step_finished(id, current, warnings, errors) = @queue << [:finished, id, current, warnings, errors]
@@ -166,10 +167,20 @@ class AnsiRenderer
     until @queue.empty?
       event = @queue.pop(true)
       case event[0]
+      when :counting
+        _, id, title = event
+        @steps[id] = { title: title, total: nil, current: 0, warnings: 0,
+                       errors: 0, state: :counting, started_at: mono, projection: 0.0 }
       when :started
         _, id, title, total = event
-        @steps[id] = { title: title, total: total, current: 0, warnings: 0,
-                       errors: 0, state: :running, started_at: mono, projection: 0.0 }
+        if (s = @steps[id]) # was counting: upgrade the same row to a bar
+          s[:total] = total
+          s[:state] = :running
+          s[:started_at] = mono # time the work, not the counting phase
+        else
+          @steps[id] = { title: title, total: total, current: 0, warnings: 0,
+                         errors: 0, state: :running, started_at: mono, projection: 0.0 }
+        end
       when :progress
         _, id, current, warnings, errors, posted_at = event
         record_latency(mono - posted_at)
@@ -206,7 +217,7 @@ def repaint(final: false)
   tr0 = mono
   permanent = @pending_permanent
   @pending_permanent = []
-  live = final ? [] : @steps.values.select { |s| s[:state] == :running }.map { |s| running_line(s) }
+  live = final ? [] : @steps.values.select { |s| %i[running counting].include?(s[:state]) }.map { |s| live_line(s) }
   tr1 = mono
   (@slow_sections ||= []) << { sect: "live_build", ms: ((tr1 - tr0) * 1000).round(1) } if tr1 - tr0 > 0.05
 
@@ -277,19 +288,37 @@ end
     "#{Ansi::BAR_FULL}#{"█" * filled}#{Ansi::BAR_EMPTY}#{"░" * (width - filled)}#{Ansi::RESET} #{format("%3.0f%%", pct * 100)}"
   end
 
+  def live_line(s)
+    return counting_line(s) if s[:state] == :counting
+    running_line(s)
+  end
+
+  # Counting phase: total is being computed, no work yet — spinner only, no count.
+  def counting_line(s)
+    line = +title_col(s[:title], "  ")
+    line << "#{SPINNER[(mono * 12).to_i % SPINNER.size]} #{Ansi::DIM}counting…#{Ansi::RESET}"
+    line << "  #{fmt_duration(mono - s[:started_at])}"
+    line
+  end
+
   def running_line(s)
     line = +title_col(s[:title], "  ")
+    elapsed = mono - s[:started_at]
     if s[:total]
       pct = [s[:current].to_f / s[:total], 1.0].min
       line << bar(pct) << "  #{fmt_count(s[:current])}/#{fmt_count(s[:total])}"
     else
       line << "#{SPINNER[(mono * 12).to_i % SPINNER.size]} #{fmt_count(s[:current])}"
     end
-    elapsed = mono - s[:started_at]
     line << "  #{fmt_duration(elapsed)}"
     if s[:total] && s[:projection] > 0 && elapsed > 1
       remaining = [elapsed * (s[:total] / s[:projection] - 1), 0].max
       line << "#{Ansi::DIM}  ETA #{fmt_duration(remaining)}#{Ansi::RESET}"
+    end
+    # Throughput: the only speed signal for indeterminate steps, a slowdown
+    # detector for determinate ones. Average since work start — stable, no jitter.
+    if elapsed > 0.5 && s[:current] > 0
+      line << "#{Ansi::DIM}  #{fmt_count((s[:current] / elapsed).round)}/s#{Ansi::RESET}"
     end
     line << "#{Ansi::YELLOW}  ⚠ #{s[:warnings]} warnings#{Ansi::RESET}" if s[:warnings] > 0
     line << "#{Ansi::RED}  ✗ #{s[:errors]} errors#{Ansi::RESET}" if s[:errors] > 0
@@ -320,6 +349,10 @@ class PlainRenderer
     @mutex = Mutex.new # whole lines only, even with many producer threads
     @sim_stats = nil
     $stdout.sync = true
+  end
+
+  def step_counting(id, title)
+    @mutex.synchronize { puts "#{title}: calculating total…" }
   end
 
   def step_started(id, title, total)

@@ -17,37 +17,39 @@
   "resize_events": 1,
   "sent": {
     "StepStartedMsg": 6,
-    "StepProgressMsg": 979,
+    "StepProgressMsg": 883,
+    "StepCountingMsg": 1,
     "NoticeMsg": 8,
     "StepFinishedMsg": 6,
     "SimDoneMsg": 1
   },
   "received": {
     "StepStartedMsg": 6,
-    "StepProgressMsg": 979,
+    "StepProgressMsg": 883,
+    "StepCountingMsg": 1,
     "NoticeMsg": 9,
     "StepFinishedMsg": 6,
     "SimDoneMsg": 1
   },
   "lost_messages": -1,
   "latency_ms": {
-    "count": 979,
-    "min": 0.04,
-    "avg": 12.54,
-    "max": 34.35,
+    "count": 883,
+    "min": 0.05,
+    "avg": 12.79,
+    "max": 31.67,
     "over_100ms": 0
   },
-  "view_calls": 368,
+  "view_calls": 332,
   "cpu_phases": {
     "active": {
-      "wall_s": 9.37,
-      "cpu_s": 2.8,
-      "cpu_pct": 29.9
+      "wall_s": 8.03,
+      "cpu_s": 2.72,
+      "cpu_pct": 33.9
     },
     "idle_tail": {
       "wall_s": 3.01,
-      "cpu_s": 0.15,
-      "cpu_pct": 5.0
+      "cpu_s": 0.19,
+      "cpu_pct": 6.3
     }
   },
   "sim_stats": {
@@ -55,9 +57,9 @@
       "categories": {
         "posts": 16,
         "planned_posts": 15,
-        "achieved_rate": 10.5,
+        "achieved_rate": 10.6,
         "planned_rate": 10.0,
-        "seconds": 1.53
+        "seconds": 1.51
       },
       "users": {
         "posts": 31,
@@ -71,28 +73,28 @@
         "planned_posts": 25,
         "achieved_rate": 10.4,
         "planned_rate": 10.0,
-        "seconds": 2.5
+        "seconds": 2.51
       },
       "uploads": {
         "posts": 31,
         "planned_posts": 30,
-        "achieved_rate": 10.3,
+        "achieved_rate": 10.2,
         "planned_rate": 10.0,
-        "seconds": 3.02
+        "seconds": 3.03
       },
       "likes": {
         "posts": 21,
         "planned_posts": 20,
         "achieved_rate": 10.4,
         "planned_rate": 10.0,
-        "seconds": 2.03
+        "seconds": 2.02
       },
       "posts": {
-        "posts": 854,
-        "planned_posts": 1200,
-        "achieved_rate": 142.3,
+        "posts": 758,
+        "planned_posts": 1000,
+        "achieved_rate": 151.5,
         "planned_rate": 200.0,
-        "seconds": 6.0
+        "seconds": 5.0
       }
     },
     "forks": {
@@ -100,7 +102,7 @@
       "reaped": 4,
       "fork_errors": []
     },
-    "wall_seconds": 9.15
+    "wall_seconds": 7.81
   },
   "stty_restored": null,
   "lipgloss_sample": "\"x\"",

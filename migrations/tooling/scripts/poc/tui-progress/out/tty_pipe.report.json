@@ -11,15 +11,15 @@
   },
   "stdout_tty": false,
   "sink_call_ms": {
-    "count": 1275,
-    "avg": 0.29,
-    "max": 13.9
+    "count": 1094,
+    "avg": 0.284,
+    "max": 12.9
   },
   "cpu_phases": {
     "active": {
-      "wall_s": 9.01,
-      "cpu_s": 0.41,
-      "cpu_pct": 4.5
+      "wall_s": 7.81,
+      "cpu_s": 0.37,
+      "cpu_pct": 4.7
     },
     "idle_tail": {
       "wall_s": 3.0,
@@ -32,16 +32,16 @@
       "categories": {
         "posts": 16,
         "planned_posts": 15,
-        "achieved_rate": 10.4,
+        "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 1.54
+        "seconds": 1.55
       },
       "users": {
         "posts": 31,
         "planned_posts": 30,
-        "achieved_rate": 10.2,
+        "achieved_rate": 10.1,
         "planned_rate": 10.0,
-        "seconds": 3.05
+        "seconds": 3.07
       },
       "tags": {
         "posts": 26,
@@ -65,11 +65,11 @@
         "seconds": 2.02
       },
       "posts": {
-        "posts": 1129,
-        "planned_posts": 1200,
-        "achieved_rate": 188.1,
+        "posts": 947,
+        "planned_posts": 1000,
+        "achieved_rate": 189.3,
         "planned_rate": 200.0,
-        "seconds": 6.0
+        "seconds": 5.0
       }
     },
     "forks": {
@@ -77,6 +77,6 @@
       "reaped": 4,
       "fork_errors": []
     },
-    "wall_seconds": 9.01
+    "wall_seconds": 7.81
   }
 }

@@ -6,28 +6,28 @@
   "stdout_tty": true,
   "lost_messages": 0,
   "latency_ms": {
-    "count": 1294,
-    "min": 0.02,
-    "avg": 16.57,
-    "max": 33.09,
+    "count": 1086,
+    "min": 0.04,
+    "avg": 16.47,
+    "max": 33.06,
     "over_100ms": 0,
     "spike_offsets_s": null
   },
   "slow_frames": null,
   "slow_writes": null,
   "slow_sections": null,
-  "frames": 201,
-  "writes": 201,
+  "frames": 227,
+  "writes": 227,
   "cpu_phases": {
     "active": {
-      "wall_s": 9.21,
-      "cpu_s": 0.27,
-      "cpu_pct": 2.9
+      "wall_s": 8.01,
+      "cpu_s": 0.31,
+      "cpu_pct": 3.9
     },
     "idle_tail": {
       "wall_s": 3.01,
-      "cpu_s": 0.0,
-      "cpu_pct": 0.0
+      "cpu_s": 0.02,
+      "cpu_pct": 0.7
     }
   },
   "sim_stats": {
@@ -68,11 +68,11 @@
         "seconds": 2.0
       },
       "posts": {
-        "posts": 1169,
-        "planned_posts": 1200,
-        "achieved_rate": 194.7,
+        "posts": 961,
+        "planned_posts": 1000,
+        "achieved_rate": 192.2,
         "planned_rate": 200.0,
-        "seconds": 6.0
+        "seconds": 5.0
       }
     },
     "forks": {
@@ -80,7 +80,7 @@
       "reaped": 4,
       "fork_errors": []
     },
-    "wall_seconds": 9.0
+    "wall_seconds": 7.8
   },
   "stty_restored": true,
   "widths": {

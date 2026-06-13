@@ -17,25 +17,27 @@
   "resize_events": 1,
   "sent": {
     "StepStartedMsg": 6,
-    "StepProgressMsg": 518,
-    "NoticeMsg": 3,
+    "StepProgressMsg": 267,
+    "StepCountingMsg": 1,
+    "NoticeMsg": 4,
     "StepFinishedMsg": 3
   },
   "received": {
     "StepStartedMsg": 6,
-    "StepProgressMsg": 512,
-    "NoticeMsg": 4,
+    "StepProgressMsg": 263,
+    "StepCountingMsg": 1,
+    "NoticeMsg": 5,
     "StepFinishedMsg": 3
   },
-  "lost_messages": 5,
+  "lost_messages": 3,
   "latency_ms": {
-    "count": 512,
-    "min": 0.03,
-    "avg": 10.76,
-    "max": 27.39,
+    "count": 263,
+    "min": 0.07,
+    "avg": 9.22,
+    "max": 25.38,
     "over_100ms": 0
   },
-  "view_calls": 130,
+  "view_calls": 129,
   "cpu_phases": {},
   "sim_stats": null,
   "stty_restored": true,

@@ -1,15 +1,16 @@
-ℹ simulation started (ansi fallbac
-ℹ Calculating max progress for pos
-✓ Categories      4,281/4,281  0:0
-ℹ Skipped 3 users with invalid ema
-✓ Users           312,440/312,440 
-✓ Tags            10,944/10,944  0
-ℹ forked 4 worker children: 919142
-ℹ Index hint: post_custom_fields i
+ℹ simulation started (ansi fallb
+ℹ Calculating max progress for p
+ℹ Skipped 3 users with invalid e
+✓ Categories      4,281/4,281  0
+ℹ Index hint: post_custom_fields
+✓ Users           312,440/312,44
+✓ Tags            10,944/10,944 
+ℹ forked 4 worker children: 1047
+ℹ Re-checking orphaned uploads
 ✓ Uploads         35,812  0:03
 ℹ reaped 4 worker children
-✓ Likes 🚀        50,000/50,000  0
-ℹ Re-checking orphaned uploads
-✓ Posts           1,248,776/1,248,
-ℹ Slow query in tags lookup (412 m
+✓ Likes 🚀        50,000/50,000 
+ℹ Slow query in tags lookup (412
 ℹ Checkpoint written
+✓ Posts           1,248,776/1,24
+

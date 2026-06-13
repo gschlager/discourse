@@ -8,10 +8,10 @@ WARN: Unresolved or ambiguous specs during Gem::Specification.reset:
 WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'
 Please report a bug if this causes problems.
 ℹ simulation started (tty-progressbar)
-Categories      [█████████████████░] 96% 4149/4281  1s
+Categories      [█████████████████░] 96% 4116/4281  1s
 Categories      [██████████████████] 100% 4281/4281  1s
 Users           [██████████████████] 100% 312440/312440  3s  ⚠ 7 warnings
-Posts           [██████████████████] 100% 1248776/1248776  6s  ✗ 2 errors
 Tags            [██████████████████] 100% 10944/10944  2s
 Uploads         :spinner 35812  3s
-Likes 🚀         [██████████████████] 100% 50000/50000  2sℹ Re-checking orphaned uploadsℹ Slow query in tags lookup (412 ms)ℹ Checkpoint written
+Posts           [██████████████████] 100% 1248776/1248776  5s  ✗ 2 errors
+Likes 🚀         [██████████████████] 100% 50000/50000  2sℹ Slow query in tags lookup (412 ms)ℹ Checkpoint written

@@ -44,6 +44,13 @@ class TtySink
     @call_stats = { count: 0, sum: 0.0, max: 0.0 }
   end
 
+  # tty-progressbar can't cleanly re-format a registered bar from spinner to
+  # determinate mid-flight, so the counting phase is just a logged notice; the
+  # bar registers when the total is known (step_started).
+  def step_counting(id, title)
+    notice("⠿ Calculating total for #{title}…")
+  end
+
   def step_started(id, title, total)
     timed do
       @mutex.synchronize do

@@ -149,6 +149,52 @@ Cooked mode throughout — no raw mode, no input reader.
   height (concurrent steps are scheduler-bounded); permanent lines are frozen at the
   width they were emitted at (no reflow after resize).
 
+## Progress display patterns (per-step)
+
+A step's display is keyed off its total, mirroring the converter: `calculate_max_progress`
+returns a number or `nil`, and the count runs *before* the work (the parallel/serial
+decision in `execute_in_parallel?` needs it). That gives three live states, all in the
+POC and captured below from a real tmux run.
+
+**Determinate (total known): full bar + percent + count + elapsed + ETA + rate.** The
+bar is what makes a stack of concurrent steps scannable at a glance.
+
+```
+  Posts     ███░░░░░░░░░  26%  328,855/1,248,776  0:01  ETA 0:03  251,921/s
+```
+
+**Counting (total being computed, no work yet): spinner + "counting…", no count.** This
+is the dedicated pre-work phase — it emits the "Calculating max progress…" notice and
+shows a spinner, but no item count, because nothing is being processed yet. When the
+count finishes, the *same row* upgrades to a determinate bar (work elapsed times from
+that point, not from counting start).
+
+```
+  Posts     ⠋ counting…  0:01
+```
+
+**Indeterminate (no total ever): spinner + running count + rate, no ETA, no bar.** The
+deliberate choice not to show a pulsing/marquee bar here: a moving bar implies a
+fraction it can't know, and in a stack next to real bars the eye reads them as
+comparable. The spinner says "different — no total" honestly, and rate is the only
+speed signal possible without a total.
+
+```
+  Uploads   ⠴ 29,950  0:02  11,642/s
+```
+
+Notes on the choices:
+- **Rate** (`items/s`, average since work start — stable, no jitter) is new vs. today's
+  ExtendedProgressBar; it doubles as a slowdown detector on determinate bars and is the
+  *only* speed cue on indeterminate ones. Easy to drop per step if it reads as clutter.
+- **Full blocks (`█░`), not sub-cell partials (`▏▎▍▌`).** Partials give 8× smoothness
+  but render inconsistently across fonts/terminals (same risk family as the `🚀`→`？`
+  seen under GNU screen); a migration bar moves slowly enough that 13–18 cells suffice.
+- **Bar stays color-neutral**; `⚠`/`✗` annotations carry yellow/red. A bar that reddens
+  on one error reads as "the whole step failed", usually wrong.
+- **Finished steps collapse** to a static `✓ title count duration [⚠ N] [✗ N]` line with
+  no bar — a lingering 100% bar is noise (and the stale-bar source in the resize case).
+
 ## tty-progressbar, tested as a third option (`poc_tty.rb`)
 
 TTY::ProgressBar::Multi 0.18.3 (pure Ruby; deps tty-cursor, tty-screen,

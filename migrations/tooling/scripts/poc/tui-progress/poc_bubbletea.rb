@@ -34,6 +34,14 @@ end
 
 # --- Messages: the converter-thread -> TUI wire format ----------------------
 
+class StepCountingMsg < Bubbletea::Message
+  attr_reader :id, :title
+  def initialize(id, title)
+    super()
+    @id, @title = id, title
+  end
+end
+
 class StepStartedMsg < Bubbletea::Message
   attr_reader :id, :title, :total
   def initialize(id, title, total)
@@ -87,6 +95,7 @@ class BubbleteaSink
     @mutex = Mutex.new
   end
 
+  def step_counting(id, title) = post(StepCountingMsg.new(id, title))
   def step_started(id, title, total) = post(StepStartedMsg.new(id, title, total))
   def step_progress(id, current, warnings, errors, posted_at) = post(StepProgressMsg.new(id, current, warnings, errors, posted_at))
   def step_finished(id, current, warnings, errors) = post(StepFinishedMsg.new(id, current, warnings, errors))
@@ -149,11 +158,22 @@ class ConverterModel
     when Bubbletea::WindowSizeMessage
       @resize_events += 1
       @last_size = [message.width, message.height]
-    when StepStartedMsg
+    when StepCountingMsg
       @steps[message.id] = {
-        title: message.title, total: message.total, current: 0,
-        warnings: 0, errors: 0, state: :running, started_at: mono,
+        title: message.title, total: nil, current: 0,
+        warnings: 0, errors: 0, state: :counting, started_at: mono,
       }
+    when StepStartedMsg
+      if (s = @steps[message.id])
+        s[:total] = message.total
+        s[:state] = :running
+        s[:started_at] = mono
+      else
+        @steps[message.id] = {
+          title: message.title, total: message.total, current: 0,
+          warnings: 0, errors: 0, state: :running, started_at: mono,
+        }
+      end
     when StepProgressMsg
       record_latency(mono - message.posted_at)
       if (s = @steps[message.id])
@@ -192,7 +212,7 @@ class ConverterModel
     lines = []
     lines.concat(@permanent)
     @steps.each_value do |s|
-      lines << running_line(s) if s[:state] == :running
+      lines << running_line(s) if %i[running counting].include?(s[:state])
     end
     lines << @dim.render("(running…)") if lines.empty?
     lines.join("\n")
@@ -219,6 +239,10 @@ class ConverterModel
   end
 
   def running_line(s)
+    if s[:state] == :counting
+      frame = SPINNER[(mono * 12).to_i % SPINNER.size]
+      return +"#{title_col(s[:title], "  ")}#{frame} #{@dim.render("counting…")}  #{fmt_duration(mono - s[:started_at])}"
+    end
     elapsed = fmt_duration(mono - s[:started_at])
     line = +title_col(s[:title], "  ")
     if s[:total]

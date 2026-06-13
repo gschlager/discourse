@@ -5,11 +5,20 @@
 # converter's step scheduler. No migrations code, no rendering code in here.
 #
 # Sink interface (all calls may come from any thread):
-#   step_started(id, title, total)              # total: Integer or nil (indeterminate)
+#   step_counting(id, title)                    # optional pre-work phase: the
+#                                               #   step's total is being computed,
+#                                               #   no work/progress yet
+#   step_started(id, title, total)              # work begins; total: Integer, or
+#                                               #   nil for a genuinely unknown total
 #   step_progress(id, current, warnings, errors, posted_at)
 #   step_finished(id, current, warnings, errors)
 #   notice(text)
 #   sim_done(stats)
+#
+# Three display states fall out of this: counting (spinner, no count), determinate
+# (bar, when total is known), indeterminate (spinner + running count, total nil).
+# A step that counts first emits step_counting then step_started(total) — the order
+# the converter uses: calculate_max_progress finishes, then the work starts.
 module TuiPoc
   class Simulation
     MONO = Process::CLOCK_MONOTONIC
@@ -17,16 +26,18 @@ module TuiPoc
     # Staggered starts, 1-4 steps concurrent. `interval` is the producer's
     # posting period: posts is the 200 updates/sec stress producer.
     STEPS = [
+      # determinate, no counting phase (total known up front)
       { id: :categories, title: "Categories", total: 4_281, delay: 0.0, duration: 1.5, interval: 0.1 },
       { id: :users, title: "Users", total: 312_440, delay: 0.3, duration: 3.0, interval: 0.1, warn_every: 4 },
-      { id: :posts, title: "Posts", total: 1_248_776, delay: 1.0, duration: 6.0, interval: 0.005, error_at: [0.41, 0.83] },
+      # determinate, but the total is expensive to compute: counts first, then bars
+      { id: :posts, title: "Posts", total: 1_248_776, delay: 1.0, count_seconds: 1.8, duration: 5.0, interval: 0.005, error_at: [0.41, 0.83] },
       { id: :tags, title: "Tags", total: 10_944, delay: 1.4, duration: 2.5, interval: 0.1 },
+      # genuinely indeterminate (no total ever): spinner + running count + rate
       { id: :uploads, title: "Uploads", total: nil, after: :categories, duration: 3.0, interval: 0.1, count_to: 35_812 },
       { id: :likes, title: "Likes 🚀", total: 50_000, after: :users, duration: 2.0, interval: 0.1 },
     ].freeze
 
     NOTICES = [
-      "Calculating max progress for posts, this may take a while…",
       "Skipped 3 users with invalid emails",
       "Index hint: post_custom_fields is missing index on (name)",
       "Re-checking orphaned uploads",
@@ -62,6 +73,14 @@ module TuiPoc
         @done[spec[:after]].pop
       else
         sleep spec[:delay]
+      end
+
+      # Mirror calculate_max_progress: count first (spinner), then start the work
+      # once the total is known. Genuinely indeterminate steps skip this.
+      if spec[:count_seconds]
+        @sink.step_counting(spec[:id], spec[:title])
+        @sink.notice("ℹ Calculating max progress for #{spec[:title].downcase}, this may take a while…")
+        sleep spec[:count_seconds]
       end
 
       @sink.step_started(spec[:id], spec[:title], spec[:total])

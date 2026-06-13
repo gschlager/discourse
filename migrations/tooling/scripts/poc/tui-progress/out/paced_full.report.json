@@ -17,32 +17,34 @@
   "resize_events": 1,
   "sent": {
     "StepStartedMsg": 6,
-    "StepProgressMsg": 1009,
+    "StepProgressMsg": 823,
+    "StepCountingMsg": 1,
     "NoticeMsg": 8,
     "StepFinishedMsg": 6,
     "SimDoneMsg": 1
   },
   "received": {
     "StepStartedMsg": 6,
-    "StepProgressMsg": 1009,
+    "StepProgressMsg": 823,
+    "StepCountingMsg": 1,
     "NoticeMsg": 9,
     "StepFinishedMsg": 6,
     "SimDoneMsg": 1
   },
   "lost_messages": -1,
   "latency_ms": {
-    "count": 1009,
-    "min": 0.03,
-    "avg": 12.05,
-    "max": 37.09,
+    "count": 823,
+    "min": 0.04,
+    "avg": 11.56,
+    "max": 28.73,
     "over_100ms": 0
   },
-  "view_calls": 368,
+  "view_calls": 332,
   "cpu_phases": {
     "active": {
-      "wall_s": 9.22,
-      "cpu_s": 2.41,
-      "cpu_pct": 26.1
+      "wall_s": 8.03,
+      "cpu_s": 2.86,
+      "cpu_pct": 35.6
     },
     "idle_tail": {
       "wall_s": 3.01,
@@ -57,7 +59,7 @@
         "planned_posts": 15,
         "achieved_rate": 10.6,
         "planned_rate": 10.0,
-        "seconds": 1.5
+        "seconds": 1.51
       },
       "users": {
         "posts": 31,
@@ -88,11 +90,11 @@
         "seconds": 2.02
       },
       "posts": {
-        "posts": 884,
-        "planned_posts": 1200,
-        "achieved_rate": 147.3,
+        "posts": 698,
+        "planned_posts": 1000,
+        "achieved_rate": 139.6,
         "planned_rate": 200.0,
-        "seconds": 6.0
+        "seconds": 5.0
       }
     },
     "forks": {
@@ -100,7 +102,7 @@
       "reaped": 4,
       "fork_errors": []
     },
-    "wall_seconds": 9.02
+    "wall_seconds": 7.8
   },
   "stty_restored": true,
   "lipgloss_sample": "\"\\e[33mx\\e[0m\"",

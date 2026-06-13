@@ -11,9 +11,9 @@
   },
   "stdout_tty": true,
   "sink_call_ms": {
-    "count": 1043,
-    "avg": 0.355,
-    "max": 20.8
+    "count": 712,
+    "avg": 0.357,
+    "max": 13.3
   },
   "cpu_phases": {},
   "sim_stats": null

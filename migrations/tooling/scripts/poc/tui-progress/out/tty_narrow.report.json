@@ -11,15 +11,15 @@
   },
   "stdout_tty": true,
   "sink_call_ms": {
-    "count": 1102,
-    "avg": 0.257,
-    "max": 18.4
+    "count": 1103,
+    "avg": 0.259,
+    "max": 14.3
   },
   "cpu_phases": {
     "active": {
       "wall_s": 7.81,
-      "cpu_s": 0.34,
-      "cpu_pct": 4.4
+      "cpu_s": 0.33,
+      "cpu_pct": 4.2
     },
     "idle_tail": {
       "wall_s": 3.0,
@@ -32,42 +32,42 @@
       "categories": {
         "posts": 16,
         "planned_posts": 15,
-        "achieved_rate": 10.3,
+        "achieved_rate": 10.4,
         "planned_rate": 10.0,
-        "seconds": 1.56
+        "seconds": 1.54
       },
       "users": {
         "posts": 31,
         "planned_posts": 30,
-        "achieved_rate": 10.2,
+        "achieved_rate": 10.1,
         "planned_rate": 10.0,
-        "seconds": 3.05
+        "seconds": 3.06
       },
       "tags": {
         "posts": 26,
         "planned_posts": 25,
         "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 2.53
+        "seconds": 2.52
       },
       "uploads": {
         "posts": 31,
         "planned_posts": 30,
-        "achieved_rate": 10.3,
+        "achieved_rate": 10.2,
         "planned_rate": 10.0,
-        "seconds": 3.02
+        "seconds": 3.03
       },
       "likes": {
         "posts": 21,
         "planned_posts": 20,
-        "achieved_rate": 10.4,
+        "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 2.02
+        "seconds": 2.03
       },
       "posts": {
-        "posts": 955,
+        "posts": 956,
         "planned_posts": 1000,
-        "achieved_rate": 190.8,
+        "achieved_rate": 191.1,
         "planned_rate": 200.0,
         "seconds": 5.0
       }
