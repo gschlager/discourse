@@ -15,7 +15,7 @@
         "planned_posts": 30,
         "achieved_rate": 10.3,
         "planned_rate": 10.0,
-        "seconds": 3.02
+        "seconds": 3.01
       },
       "tags": {
         "posts": 26,
@@ -36,12 +36,12 @@
         "planned_posts": 20,
         "achieved_rate": 10.5,
         "planned_rate": 10.0,
-        "seconds": 2.01
+        "seconds": 2.0
       },
       "posts": {
-        "posts": 967,
+        "posts": 975,
         "planned_posts": 1000,
-        "achieved_rate": 193.3,
+        "achieved_rate": 194.8,
         "planned_rate": 200.0,
         "seconds": 5.0
       }
@@ -51,6 +51,6 @@
       "reaped": 4,
       "fork_errors": []
     },
-    "wall_seconds": 7.8
+    "wall_seconds": 7.81
   }
 }

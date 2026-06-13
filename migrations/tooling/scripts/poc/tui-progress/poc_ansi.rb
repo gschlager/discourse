@@ -3,7 +3,8 @@
 
 # ANSI-fallback POC: hand-rolled cursor-up + line-rewrite live region with
 # permanent lines (notices, finished steps) scrolling above it. Same simulation
-# harness as poc_bubbletea.rb, zero gem dependencies (stdlib only).
+# harness as poc_bubbletea.rb. Only non-stdlib dependency is unicode-display_width
+# for character widths (the real reporter would carry it via migrations-core).
 #
 # Env knobs:
 #   POC_REPORT=path   where to write the JSON report (default report.json)
@@ -12,7 +13,11 @@
 
 require "json"
 require "io/console"
-require "reline"
+begin
+  require "unicode/display_width"
+rescue LoadError
+  abort "poc_ansi needs the unicode-display_width gem: gem install unicode-display_width"
+end
 require_relative "sim_harness"
 
 MONO = Process::CLOCK_MONOTONIC
@@ -39,8 +44,11 @@ module Ansi
 
   def self.up(n) = "\e[#{n}A"
 
+  # Display width, ignoring SGR colour codes. unicode-display_width is a pure
+  # table lookup (no terminal probing) — unlike Reline, which writes \e[6n and
+  # waits on stdin to measure ambiguous-width characters.
   def self.width(str)
-    str.gsub(/\e\[[0-9;]*m/, "").grapheme_clusters.sum { |c| Reline::Unicode.get_mbchar_width(c) }
+    Unicode::DisplayWidth.of(str.gsub(/\e\[[0-9;]*m/, ""))
   end
 
   # ANSI-aware truncation to a visible width (keeps SGR sequences intact).
@@ -53,7 +61,7 @@ module Ansi
         out << tok
         next
       end
-      w = Reline::Unicode.get_mbchar_width(tok)
+      w = Unicode::DisplayWidth.of(tok)
       break if used + w > max
       out << tok
       used += w

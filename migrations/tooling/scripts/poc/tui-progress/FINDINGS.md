@@ -16,9 +16,9 @@ made to work — but two of the workarounds replace the framework's core (its ev
 and its output model), and the one requirement it cannot meet cleanly is one the
 converter actually cares about: notice/finished lines must persist in terminal history
 on runs whose output exceeds the screen. The hand-rolled ANSI renderer
-(`poc_ansi.rb`, ~250 lines, stdlib only) meets every requirement, beats bubbletea on
-every measurement, and removes ~42 MB of Go-binary platform gems from the dependency
-question. Details per checklist item below; comparison numbers at the end.
+(`poc_ansi.rb`, ~280 lines, one pure-Ruby gem) meets every requirement, beats
+bubbletea on every measurement, and removes ~42 MB of Go-binary platform gems from the
+dependency question. Details per checklist item below; comparison numbers at the end.
 
 Architecture note that explains most findings: bubbletea-ruby is not a Ruby event loop
 over a Go renderer goroutine — the Elm loop (`Bubbletea::Runner#run_loop`) is plain
@@ -125,10 +125,10 @@ garbling.
 
 ## The ANSI fallback POC (`poc_ansi.rb`)
 
-Same simulation harness (`sim_harness.rb`), zero gems (stdlib `io/console` + `reline`
-for character width). Cursor-up + line-rewrite live region; permanent lines are
-emitted at the top of the region each frame and scroll into real terminal history.
-Cooked mode throughout — no raw mode, no input reader.
+Same simulation harness (`sim_harness.rb`), stdlib `io/console` plus one gem,
+`unicode-display_width`, for character widths. Cursor-up + line-rewrite live region;
+permanent lines are emitted at the top of the region each frame and scroll into real
+terminal history. Cooked mode throughout — no raw mode, no input reader.
 
 - **Persistence**: at 10 rows, the *entire* history survives in scrollback with final
   content (`ansi_small_height.screen.txt`) — the requirement bubbletea can't meet.
@@ -146,11 +146,12 @@ Cooked mode throughout — no raw mode, no input reader.
   counted as real region rows, so the resize/cursor math is unaffected.
 - **Non-TTY**: detects `!$stdout.tty?` and exits 2 with a clear message.
 - **Forks, resize, narrow terminals**: same scenarios as bubbletea, all clean.
-- One real-implementation note: use the `unicode-display_width` gem instead of Reline
-  for widths. Reline probes ambiguous-width characters by writing `\e[6n` to the
-  terminal and waiting (~500 ms one-time stall if nothing answers, and it reads the
-  reply from stdin). The PTY driver answers the probe like a real terminal; with that,
-  zero latency spikes.
+- Character widths use `unicode-display_width` (a pure table lookup). An earlier
+  iteration used stdlib Reline, but Reline probes ambiguous-width characters by writing
+  `\e[6n` to the terminal and reading the reply from stdin — a ~500 ms one-time stall if
+  nothing answers, and unwanted terminal I/O. `unicode-display_width` has neither;
+  matched Reline's widths exactly here (✓/⚠/✗ = 1, 🚀 = 2, ℹ = 1) with the default
+  `ambiguous = 1`. It's the one non-stdlib dependency.
 - Known bounds, both fine for the converter: the live region must fit the terminal
   height (concurrent steps are scheduler-bounded); permanent lines are frozen at the
   width they were emitted at (no reflow after resize).
@@ -376,7 +377,7 @@ CPU and write count further (latency rises to the frame-quantized ~50/100 ms).
 | notice/finished history | lost beyond screen height | lost beyond screen height | overwritten by bar redraws | **persists** |
 | finished steps collapse to ✓ lines | yes (in view) | yes (in view) | no — bars stay as rows | yes |
 | Ctrl-C → SignalException | needs translation | needs translation | native | native |
-| extra dependencies | 2 Go platform gems + 2 Ruby gems | same | 5 small pure-Ruby gems | none |
+| extra dependencies | 2 Go platform gems + 2 Ruby gems | same | 5 small pure-Ruby gems | 1 pure-Ruby gem (unicode-display_width) |
 
 ## Reproducing
 

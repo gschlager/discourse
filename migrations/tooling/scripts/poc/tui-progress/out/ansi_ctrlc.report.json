@@ -6,10 +6,10 @@
   "stdout_tty": true,
   "lost_messages": 0,
   "latency_ms": {
-    "count": 701,
-    "min": 0.12,
-    "avg": 53.54,
-    "max": 98.9,
+    "count": 705,
+    "min": 0.09,
+    "avg": 52.19,
+    "max": 99.52,
     "over_100ms": 0,
     "spike_offsets_s": null
   },

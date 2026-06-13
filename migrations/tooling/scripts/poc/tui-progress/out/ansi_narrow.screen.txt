@@ -12,7 +12,7 @@
 
 ✓ Tags                  10,944/1
 
-ℹ forked 4 worker children: 1075
+ℹ forked 4 worker children: 1088
 
 ℹ Re-checking orphaned uploads
 
