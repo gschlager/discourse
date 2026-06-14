@@ -26,7 +26,9 @@ RUN set -eux; \
     docker-php-ext-install mysqli pdo_mysql pgsql pdo_pgsql; \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Composer 2.2 LTS is the last line supporting PHP 7.1 (which phpBB 3.0/3.1
+# need); it also runs on 7.4/8.x, so it covers the whole version matrix.
+COPY --from=composer:2.2 /usr/bin/composer /usr/bin/composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
 WORKDIR /work
