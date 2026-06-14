@@ -1,0 +1,36 @@
+intermediate_db:
+  path: "/shared/import/intermediate.db"
+
+# The phpBB source database. `type` selects the adapter; fill in the matching
+# block. `table_prefix` is the prefix on every phpBB table (default `phpbb_`).
+source_db:
+  type: mysql # mysql or postgres
+  table_prefix: "phpbb_"
+  mysql:
+    host: "127.0.0.1"
+    port: 3306
+    username: "root"
+    password: "password"
+    database: "phpbb"
+  postgres:
+    host: "127.0.0.1"
+    port: 5432
+    user: "username"
+    password: "password"
+    dbname: "phpbb"
+
+import:
+  site_url: "https://example.com"
+  # Prefix on the source forum's paths, e.g. "phpBB/" if installed in a
+  # subdirectory. Used when building permalinks.
+  url_prefix: ""
+  # Offsets so converted private-message topic/post ids can't collide with
+  # regular topic/post ids.
+  id_prefix:
+    message_topic_id: "10000000"
+    message_post_id: "11000000"
+  avatars:
+    uploaded: true
+    gallery: true
+    remote: true
+    gravatar: true
