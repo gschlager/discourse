@@ -1,0 +1,33 @@
+# Throwaway MariaDB + Postgres that phpBB's db_tools materializes into, plus a
+# generator service whose PHP version is chosen per phpBB release. Only used to
+# (re)generate the committed fixtures — see generate.sh and ../README.md.
+services:
+  mariadb:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: phpbb
+      MARIADB_DATABASE: phpbb
+    tmpfs:
+      - /var/lib/mysql # schema-only generation, no durability needed
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: phpbb
+      POSTGRES_DB: phpbb
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  generate:
+    build:
+      context: .
+      args:
+        PHP_VERSION: ${PHP_VERSION:-7.4}
+    depends_on:
+      - mariadb
+      - postgres
+    environment:
+      DB_HOST_MYSQL: mariadb
+      DB_HOST_PG: postgres
+    volumes:
+      - ./out:/out # generated fixtures land here
