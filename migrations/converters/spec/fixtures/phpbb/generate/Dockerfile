@@ -9,15 +9,15 @@ FROM php:${PHP_VERSION}-cli
 # `git`/`unzip` for composer. (The schema dumps run inside the DB containers, so
 # this image needs no MySQL/Postgres client.)
 #
-# The older PHP images are built on EOL Debian (e.g. 7.1 on buster), whose apt
-# repos have moved to archive.debian.org — repoint at the archive before
-# installing.
+# The older PHP images are built on EOL Debian (7.1 on buster, 7.4/8.1 on
+# bullseye), whose apt repos have moved to archive.debian.org. Repoint the main
+# suite at the archive and drop the security/updates suites (not on the archive
+# for every release, and the base packages below all live in main).
 RUN set -eux; \
     for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list; do \
       [ -f "$f" ] || continue; \
       sed -i -e 's|http://deb.debian.org/debian|http://archive.debian.org/debian|g' \
-             -e 's|http://security.debian.org/debian-security|http://archive.debian.org/debian-security|g' \
-             -e 's|http://deb.debian.org/debian-security|http://archive.debian.org/debian-security|g' \
+             -e '/security/d' \
              -e '/-updates/d' "$f"; \
     done; \
     printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99archive; \
