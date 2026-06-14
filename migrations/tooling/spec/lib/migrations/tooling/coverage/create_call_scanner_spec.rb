@@ -83,6 +83,20 @@ RSpec.describe Migrations::Tooling::Coverage::CreateCallScanner do
       )
     end
 
+    it "flags delegation when a source calls PostEmbedWriter.write" do
+      bare = scan("PostEmbedWriter.write(item[:id], embeds)")
+      qualified = scan("Migrations::Converters::PostEmbedWriter.write(id, embeds)")
+
+      expect(bare.delegates_post_embeds).to be(true)
+      expect(qualified.delegates_post_embeds).to be(true)
+    end
+
+    it "does not flag delegation for unrelated .write calls or other receivers" do
+      expect(scan("PostEmbedWriter.flush(embeds)").delegates_post_embeds).to be(false)
+      expect(scan("file.write(data)").delegates_post_embeds).to be(false)
+      expect(scan("IntermediateDB::User.create(username: 'a')").delegates_post_embeds).to be(false)
+    end
+
     it "raises with the source path when the source cannot be parsed" do
       expect { described_class.scan("def broken(", path: "steps/users.rb") }.to raise_error(
         Migrations::Tooling::Coverage::AnalysisError,

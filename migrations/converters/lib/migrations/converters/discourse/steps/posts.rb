@@ -69,67 +69,10 @@ module Migrations
               wiki: item[:wiki],
             )
 
-            write_embeds(item[:id], embeds)
+            PostEmbedWriter.write(item[:id], embeds)
           end
 
           private
-
-          def write_embeds(post_id, embeds)
-            embeds.quotes.each do |quote|
-              IntermediateDB::PostQuote.create(
-                post_id:,
-                placeholder: quote[:placeholder],
-                quoted_post_id: quote[:quoted_post_id],
-                quoted_user_id: quote[:quoted_user_id],
-                quoted_username: quote[:quoted_username],
-              )
-            end
-
-            embeds.links.each do |link|
-              IntermediateDB::PostLink.create(
-                post_id:,
-                placeholder: link[:placeholder],
-                url: link[:url],
-                text: link[:text],
-                target_topic_id: link[:target_topic_id],
-                target_post_id: link[:target_post_id],
-              )
-            end
-
-            embeds.mentions.each do |mention|
-              IntermediateDB::PostMention.create(
-                post_id:,
-                placeholder: mention[:placeholder],
-                mention_type: mention[:mention_type],
-                target_id: mention[:target_id],
-                name: mention[:name],
-              )
-            end
-
-            embeds.polls.each do |poll|
-              IntermediateDB::PostPoll.create(
-                post_id:,
-                placeholder: poll[:placeholder],
-                poll_id: poll[:poll_id],
-              )
-            end
-
-            embeds.events.each do |event|
-              IntermediateDB::PostEvent.create(
-                post_id:,
-                placeholder: event[:placeholder],
-                event_id: event[:event_id],
-              )
-            end
-
-            embeds.uploads.each do |upload|
-              IntermediateDB::PostUpload.create(
-                post_id:,
-                placeholder: upload[:placeholder],
-                upload_id: upload[:upload_id],
-              )
-            end
-          end
 
           # Keeps only values the enum recognizes, otherwise the fallback (the
           # source may carry values from plugins or versions we don't model).

@@ -19,6 +19,20 @@ module Migrations
         # structural, not a configurable role, so it is hardcoded.
         REFERENCE_CONVERTER = "discourse"
 
+        # The IntermediateDB linkage models that `PostEmbedWriter` writes. A
+        # converter that drains its embeds through that helper (rather than with
+        # literal `.create` call sites) covers every column of these tables; the
+        # scanner flags the delegation, and `covered_columns` credits them here.
+        # See `CreateCallScanner::POST_EMBED_WRITER`.
+        EMBED_LINKAGE_MODELS = %w[
+          PostUpload
+          PostQuote
+          PostMention
+          PostLink
+          PostPoll
+          PostEvent
+        ].freeze
+
         class Error < StandardError
           include Migrations::CLI::PresentableError
         end
@@ -40,7 +54,7 @@ module Migrations
           # just the reference: there is no legitimate reason to write
           # something the schema doesn't know.
           converters.each do |name|
-            unknown_columns = unknown_columns(expected, results.fetch(name).written_columns)
+            unknown_columns = unknown_columns(expected, covered_columns(results.fetch(name), expected))
             unknown_models = results.fetch(name).unknown_models
 
             if unknown_columns.any? || unknown_models.any?
@@ -51,7 +65,8 @@ module Migrations
 
           # Only the reference is asserted against the full schema; every
           # other converter writes a subset of the schema by design.
-          missing = missing_columns(expected, results.fetch(REFERENCE_CONVERTER).written_columns)
+          missing =
+            missing_columns(expected, covered_columns(results.fetch(REFERENCE_CONVERTER), expected))
           if missing.any?
             report_missing(expected, missing)
             passed = false
@@ -66,6 +81,23 @@ module Migrations
         end
 
         private
+
+        # The columns a converter covers: those written at literal `.create` call
+        # sites, plus — when it drains its embeds through `PostEmbedWriter` — every
+        # column of the linkage tables that helper writes.
+        #
+        # @return [Hash{String => Set<Symbol>}]
+        def covered_columns(result, expected)
+          written = result.written_columns
+          return written unless result.delegates_post_embeds
+
+          written = written.dup
+          EMBED_LINKAGE_MODELS.each do |model_name|
+            next unless (model = expected[model_name])
+            written[model_name] = (written[model_name] || Set.new) | model.columns
+          end
+          written
+        end
 
         # @return [Hash{String => Array<Symbol>}] uncovered columns per model,
         #   only for models that have at least one.
