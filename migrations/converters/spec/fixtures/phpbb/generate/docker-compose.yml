@@ -7,12 +7,15 @@ services:
     environment:
       MARIADB_ROOT_PASSWORD: phpbb
       MARIADB_DATABASE: phpbb
+      MARIADB_USER: phpbb # gets ALL on the phpbb database (enough to create tables)
+      MARIADB_PASSWORD: phpbb
     tmpfs:
       - /var/lib/mysql # schema-only generation, no durability needed
 
   postgres:
     image: postgres:16
     environment:
+      POSTGRES_USER: phpbb # becomes the superuser
       POSTGRES_PASSWORD: phpbb
       POSTGRES_DB: phpbb
     tmpfs:
