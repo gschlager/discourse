@@ -15,12 +15,14 @@ cd "$(dirname "$0")"
 
 RAW="https://raw.githubusercontent.com/phpbb/phpbb"
 
-# version | release tag | PHP (legacy drivers cap the interpreter: 3.1 <= 7.1)
+# version | release tag | PHP (legacy drivers cap the interpreter: 3.1 <= 7.1).
+# Pinned to the final release of each EOL branch (3.0/3.1/3.2) and the latest
+# 3.3; bump these when regenerating against a newer phpBB.
 MATRIX=(
   "3.0|release-3.0.14|7.1"
   "3.1|release-3.1.12|7.1"
   "3.2|release-3.2.11|7.4"
-  "3.3|release-3.3.14|8.1"
+  "3.3|release-3.3.17|8.1"
 )
 
 compose() { PHP_VERSION="${PHP_VERSION:-7.4}" docker compose "$@"; }
