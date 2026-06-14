@@ -14,6 +14,7 @@ Gem::Specification.new do |s|
   s.add_dependency "colored2"
   s.add_dependency "i18n"
   s.add_dependency "markbridge"
+  s.add_dependency "mysql2"
   s.add_dependency "pg"
   s.add_dependency "zeitwerk"
 end

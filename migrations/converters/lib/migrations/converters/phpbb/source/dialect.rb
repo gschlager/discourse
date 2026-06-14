@@ -64,9 +64,21 @@ module Migrations
           raise NotImplementedError
         end
 
+        # SQL expression for the schema/namespace `information_schema` reports for
+        # this connection's tables — needed to scope introspection to the current
+        # database. MySQL's `information_schema` is server-wide, so an unscoped
+        # probe leaks across databases on the same server.
+        def current_schema
+          raise NotImplementedError
+        end
+
         class MySQL < Dialect
           def epoch_now
             "UNIX_TIMESTAMP()"
+          end
+
+          def current_schema
+            "DATABASE()"
           end
 
           def json_array_agg(expr)
@@ -89,6 +101,10 @@ module Migrations
         class Postgres < Dialect
           def epoch_now
             "EXTRACT(EPOCH FROM NOW())::bigint"
+          end
+
+          def current_schema
+            "current_schema()"
           end
 
           def json_array_agg(expr)
