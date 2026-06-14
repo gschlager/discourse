@@ -10,4 +10,8 @@ group :test do
   gem "rspec"
   gem "rspec-multi-mock"
   gem "mocha"
+
+  # Optional runtime dependency (see the gemspec); pulled in for the MySQL
+  # retrieval-lint specs without making it a hard dependency of the gem.
+  gem "mysql2"
 end

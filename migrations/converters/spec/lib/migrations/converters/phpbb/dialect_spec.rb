@@ -45,6 +45,10 @@ RSpec.describe Migrations::Converters::Phpbb::Dialect do
       expect(dialect.quote_identifier("phpbb_users")).to eq("`phpbb_users`")
       expect(dialect.quote_identifier("a`b")).to eq("`a``b`")
     end
+
+    it "scopes information_schema to the current database" do
+      expect(dialect.current_schema).to eq("DATABASE()")
+    end
   end
 
   describe described_class::Postgres do
@@ -67,6 +71,10 @@ RSpec.describe Migrations::Converters::Phpbb::Dialect do
     it "quotes identifiers with double quotes and escapes them" do
       expect(dialect.quote_identifier("phpbb_users")).to eq('"phpbb_users"')
       expect(dialect.quote_identifier('a"b')).to eq('"a""b"')
+    end
+
+    it "scopes information_schema to the current schema" do
+      expect(dialect.current_schema).to eq("current_schema()")
     end
   end
 
