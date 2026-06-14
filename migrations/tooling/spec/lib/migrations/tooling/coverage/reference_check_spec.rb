@@ -10,10 +10,11 @@ RSpec.describe Migrations::Tooling::Coverage::ReferenceCheck do
     Migrations::Tooling::Coverage::SchemaColumns::Model.new(name:, required:, optional:)
   end
 
-  def analysis(written: {}, unknown: {})
+  def analysis(written: {}, unknown: {}, delegates_post_embeds: false)
     Migrations::Tooling::Coverage::ConverterAnalyzer::Result.new(
       written_columns: written.transform_values { |columns| Set.new(columns) },
       unknown_models: unknown,
+      delegates_post_embeds:,
     )
   end
 
@@ -105,6 +106,36 @@ RSpec.describe Migrations::Tooling::Coverage::ReferenceCheck do
 
     passed = nil
     expect { passed = check.run }.to output(/models that don't exist/).to_stdout
+    expect(passed).to be false
+  end
+
+  it "credits the linkage tables when the reference converter delegates to PostEmbedWriter" do
+    stub_coverage(
+      { "discourse" => analysis(written: { "User" => %i[id name] }, delegates_post_embeds: true) },
+      schema: {
+        "User" => model("User", required: [:id], optional: [:name]),
+        "PostUpload" =>
+          model("PostUpload", required: %i[post_id placeholder], optional: [:upload_id]),
+      },
+    )
+
+    passed = nil
+    expect { passed = check.run }.to output(/covers all/).to_stdout
+    expect(passed).to be true
+  end
+
+  it "still reports linkage columns missing when the converter does not delegate" do
+    stub_coverage(
+      { "discourse" => analysis(written: { "User" => %i[id name] }, delegates_post_embeds: false) },
+      schema: {
+        "User" => model("User", required: [:id], optional: [:name]),
+        "PostUpload" =>
+          model("PostUpload", required: %i[post_id placeholder], optional: [:upload_id]),
+      },
+    )
+
+    passed = nil
+    expect { passed = check.run }.to output(/does not write every/).to_stdout
     expect(passed).to be false
   end
 

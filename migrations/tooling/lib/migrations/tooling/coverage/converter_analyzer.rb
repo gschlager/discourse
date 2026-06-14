@@ -10,8 +10,9 @@ module Migrations
       # only one branch of a conditional still counts as covered.
       class ConverterAnalyzer
         # `written_columns` per model name; `unknown_models` call site
-        # locations per non-resolving model name.
-        Result = Data.define(:written_columns, :unknown_models)
+        # locations per non-resolving model name; `delegates_post_embeds` whether
+        # any source drains its embeds through `PostEmbedWriter`.
+        Result = Data.define(:written_columns, :unknown_models, :delegates_post_embeds)
 
         # @param converter_path [String] the converter's root source directory
         def initialize(converter_path)
@@ -22,6 +23,7 @@ module Migrations
         def analyze
           written = {}
           unknown = {}
+          delegates_post_embeds = false
 
           source_files.each do |file|
             scan = CreateCallScanner.scan(File.read(file), path: display_path(file))
@@ -30,9 +32,10 @@ module Migrations
             scan.unknown_models.each do |model, locations|
               (unknown[model] ||= []).concat(locations)
             end
+            delegates_post_embeds ||= scan.delegates_post_embeds
           end
 
-          Result.new(written_columns: written, unknown_models: unknown)
+          Result.new(written_columns: written, unknown_models: unknown, delegates_post_embeds:)
         end
 
         private

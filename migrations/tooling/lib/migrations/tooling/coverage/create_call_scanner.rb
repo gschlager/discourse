@@ -28,9 +28,19 @@ module Migrations
         INTERMEDIATE_DB = :IntermediateDB
         private_constant :INTERMEDIATE_DB
 
+        # The shared embed-drain helper. A converter that calls
+        # `PostEmbedWriter.write(post_id, embeds)` writes every column of the six
+        # `post_*` linkage tables through it rather than with literal `.create`
+        # call sites, so the scanner records the delegation and the coverage check
+        # credits those tables (see `ReferenceCheck::EMBED_LINKAGE_MODELS`).
+        POST_EMBED_WRITER = :PostEmbedWriter
+        private_constant :POST_EMBED_WRITER
+
         # `columns` are the written columns per model name; `unknown_models` are
-        # the call site locations per non-resolving model name.
-        Result = Data.define(:columns, :unknown_models)
+        # the call site locations per non-resolving model name;
+        # `delegates_post_embeds` is whether the source drains its embeds through
+        # `PostEmbedWriter`.
+        Result = Data.define(:columns, :unknown_models, :delegates_post_embeds)
 
         # @param source [String] Ruby source to analyse
         # @param path [String] source location, used in error messages and
@@ -46,7 +56,11 @@ module Migrations
 
           scanner = new(path)
           result.value.accept(scanner)
-          Result.new(columns: scanner.columns, unknown_models: scanner.unknown_models)
+          Result.new(
+            columns: scanner.columns,
+            unknown_models: scanner.unknown_models,
+            delegates_post_embeds: scanner.delegates_post_embeds?,
+          )
         end
 
         attr_reader :columns, :unknown_models
@@ -56,14 +70,27 @@ module Migrations
           @path = path
           @columns = Hash.new { |hash, key| hash[key] = Set.new }
           @unknown_models = Hash.new { |hash, key| hash[key] = [] }
+          @delegates_post_embeds = false
+        end
+
+        def delegates_post_embeds?
+          @delegates_post_embeds
         end
 
         def visit_call_node(node)
           record_create_call(node)
+          record_embed_writer_call(node)
           super
         end
 
         private
+
+        def record_embed_writer_call(node)
+          return unless node.name == :write
+          return unless const_name(node.receiver) == POST_EMBED_WRITER
+
+          @delegates_post_embeds = true
+        end
 
         def record_create_call(node)
           return unless node.name == :create
