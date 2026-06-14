@@ -45,7 +45,7 @@ $generator = new \phpbb\db\migration\schema_generator(
     $build_tools($sqlite, true),
     $root,
     $phpEx,
-    $table_prefix,
+    $table_prefix
 );
 $schema = $generator->get_schema();
 
@@ -58,7 +58,7 @@ $db->sql_connect(
     getenv('DB_NAME'),
     (int) getenv('DB_PORT'),
     false,
-    false,
+    false
 );
 
 $tools = $build_tools($db);

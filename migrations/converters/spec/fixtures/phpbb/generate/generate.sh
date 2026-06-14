@@ -78,6 +78,7 @@ generate_one() {
   echo ">>> phpBB ${ver} (${tag}) on PHP ${PHP_VERSION}"
   mkdir -p "../schemas/${ver}"
 
+  compose down -v >/dev/null 2>&1 || true # clean slate, in case a prior run was interrupted
   compose up -d --build mariadb postgres
   wait_for_dbs
 
