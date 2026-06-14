@@ -582,15 +582,17 @@ the conformance corpus: each pattern is a spec test fed through
 Smilies are injected as plain lookups (built once in worker `setup`), never DB
 calls — keeping the Processor pure.
 
-Attachments are the one phpBB wrinkle the shared registry doesn't cover. Markbridge
+Attachments are the one wrinkle the shared AST registry doesn't cover. Markbridge
 mints upload placeholders from `Markbridge::AST::Upload` nodes (carrying a sha1),
 but phpBB attachments arrive as `[attachment=N]…` markup plus the `uploads` JSON
-joined onto the post row — there is no upload node in the AST. So the phpBB Posts
-step resolves attachments itself: create an `IntermediateDB::Upload` per file, mint
-a token with `buffer.upload(upload_id: …)`, and rewrite the `[attachment=N]`
-markup to that token in the pre-clean. Same destination as the Discourse path
-(`post_uploads` linkage rows + tokens in `raw`), reached through a phpBB-specific
-extractor rather than the AST handler.
+joined onto the post row — there is no upload node in the AST. The resolution
+(create an `IntermediateDB::Upload` per file, mint `buffer.upload(upload_id: …)`,
+rewrite the `[attachment=N]` reference to that token) reaches the same destination
+as the Discourse path (`post_uploads` rows + tokens in `raw`), but through an
+out-of-band extractor rather than the AST handler. This is **not** phpBB-specific —
+vBulletin and XenForo reference attachments by id the same way, so it is a shared
+seam with two per-source hooks; see
+[Shared seams across SQL converters](#shared-seams-across-sql-converters).
 
 ## Step layer
 
@@ -646,7 +648,7 @@ module Phpbb
           user_id:     author_id(item),
           # ... every IntermediateDB Post column acknowledged; unavailable ⇒ column: nil
         )
-        write_embeds(item[:post_id], embeds)   # drain buffer → post_* linkage tables
+        PostEmbedWriter.write(item[:post_id], embeds)   # shared drain → post_* tables
 
         IntermediateDB::Permalink.create(
           url: "#{settings[:url_prefix]}viewtopic.php?p=#{item[:post_id]}",
@@ -654,15 +656,6 @@ module Phpbb
         )
       rescue SomeExpectedError => e
         tracker.log_warning("Could not convert post #{item[:post_id]}", exception: e)
-      end
-
-      # Uniform across converters: each typed collection splats into its linkage
-      # table (see the Discourse Posts step in #206 for the full version).
-      def write_embeds(post_id, embeds)
-        embeds.uploads.each { |u| IntermediateDB::PostUpload.create(post_id:, **u) }
-        embeds.polls.each   { |p| IntermediateDB::PostPoll.create(post_id:, **p) }
-        embeds.quotes.each  { |q| IntermediateDB::PostQuote.create(post_id:, **q) }
-        embeds.mentions.each { |m| IntermediateDB::PostMention.create(post_id:, **m) }
       end
     end
 
@@ -724,6 +717,91 @@ The grouping has to move below the contract, into the Source, in one of two ways
 Either way the dedup logic leaves the step. The design's rule — *steps are pure,
 enumeration owns ordering and grouping* — is what makes this fall out cleanly;
 the old step only worked because it ran serially.
+
+## Shared seams across SQL converters
+
+The embed/placeholder stack (#204/#205) made one class of embeds reusable: the
+ones Markbridge surfaces as **AST nodes** — `Upload` (sha1 / `upload://`),
+`Quote`, `Mention`, `Url`. `Content.embed_handlers` maps those to `EmbedBuffer`
+calls once, for every converter. But three things the phpBB Posts step needs are
+*also* converter-agnostic, yet are currently written converter-private (or, in
+#206, private to the Discourse step). phpBB is the first SQL forum converter, so
+it is the right place to hoist them — vBulletin and XenForo hit the identical
+shapes and should inherit, not re-implement.
+
+**1. The embed drain — `PostEmbedWriter`.** Draining an `EmbedBuffer` into the six
+`post_*` linkage tables is fixed: the collections and tables are converter-agnostic
+and the descriptor hashes splat straight into `create`. In #206 it is a `private`
+`write_embeds` on `Discourse::Posts`; every Posts step needs it byte-for-byte. It
+should be one shared helper:
+
+```ruby
+module Migrations::Converters
+  module PostEmbedWriter
+    def self.write(post_id, embeds)
+      embeds.uploads.each  { |u| IntermediateDB::PostUpload.create(post_id:, **u) }
+      embeds.quotes.each   { |q| IntermediateDB::PostQuote.create(post_id:, **q) }
+      embeds.mentions.each { |m| IntermediateDB::PostMention.create(post_id:, **m) }
+      embeds.polls.each    { |p| IntermediateDB::PostPoll.create(post_id:, **p) }
+      embeds.events.each   { |e| IntermediateDB::PostEvent.create(post_id:, **e) }
+      embeds.links.each    { |l| IntermediateDB::PostLink.create(post_id:, **l) }
+    end
+  end
+end
+```
+
+It is a *separate* unit, deliberately not a method on `EmbedBuffer`: the buffer's
+contract is "no DB or id-map access, stays pure," which is what keeps `process`
+forkable. The drain touches the DB, so it lives processor-side, beside the buffer,
+not on it.
+
+**2. Out-of-band attachment resolution.** A forum's richest embed — file
+attachments — is *not* an AST node. It is an id-bearing tag in the body plus a row
+in a side table, and the resolution is identical across sources:
+
+> body references an attachment *by id* → look its metadata up in a side table →
+> create an `IntermediateDB::Upload`, mint `buffer.upload(upload_id:)`, and replace
+> the in-body reference with that token.
+
+Only two things vary, so the seam is a small extractor with two per-source hooks
+over a shared body:
+
+| source     | `attachment_ref_pattern` (in-body tag) | `resolve_attachment(id)` (file lookup)                 |
+|------------|-----------------------------------------|--------------------------------------------------------|
+| phpBB      | `[attachment=N]…`                       | `physical_filename` under `upload_path`                |
+| vBulletin  | `[ATTACH]N[/ATTACH]` / `[ATTACH=…]N…`    | `attachment` → `filedata` (DB blob or filesystem path) |
+| XenForo    | `[ATTACH=full]N[/ATTACH]`               | `xf_attachment` → `xf_attachment_data` (data-id + hash)|
+
+Describing this as a "phpBB-specific extractor" (as the [Content layer](#content-layer)
+currently does) buries a three-converter mechanism in one converter. It belongs in
+the converters framework with the hooks above.
+
+**3. De-namespace `UploadCreator`.** Today it lives at
+`converters/discourse/utilities/upload_creator.rb` under `module Discourse`, but its
+body is generic — it routes an item's url/filename/origin columns to
+`IntermediateDB::Upload.create_for_url` / `create_for_file`. Avatars (phpBB users),
+attachments, and inline images across *every* converter need it, and it is the
+natural "create an Upload" building block for seam #2. The underlying
+`Upload.create_for_*` is already shared in core; only this convenience wrapper is
+misplaced. Move it to the framework before phpBB copies it.
+
+**Softer, lower-priority seams:** per-post permalink emission (same "one permalink
+per post," only the URL template differs — `viewtopic.php?p=N` vs `showthread.php?p=N`
+vs `posts/PID` — so a `permalink_template` hook, not a hand-written `Permalink.create`
+in each step) and the poll-embed mint (`has_poll → buffer.poll`; shared wiring, only
+the *condition* is per-source).
+
+**Legitimately per-source, not reuse gaps:** format selection / the `<r>`/`<t>`
+sniff (only phpBB stores both forms), `LegacyCleaner` (phpBB markup artifacts; the
+conformance-corpus *method* is reusable, the regexes aren't), and the Source's
+SQL/dialect/capabilities. Mention *classification* is already shared for these
+sources — Markbridge classifies `@name` into user/group/here/all during parse, so
+it flows through `Content.embed_handlers[:mention]` for free; the Discourse
+`MentionResolver` exists only because a Discourse source is raw Markdown Markbridge
+can't parse, and is correctly Discourse-only.
+
+The payoff: get these right against phpBB and a vBulletin or XenForo converter is
+mostly Source SQL + a tag regex + a file-path resolver.
 
 ## Testing
 
