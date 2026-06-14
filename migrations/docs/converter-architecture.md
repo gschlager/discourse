@@ -112,10 +112,16 @@ the IntermediateDB schema those tables are *not modeled*:
   `tables/poll_votes.rb` under
   `migrations/tooling/config/schema/intermediate_db/tables/` — only `topics.rb`.
 
-So before any of the post/poll/permalink steps can run, the IntermediateDB
-schema has to gain those tables and regenerate its models:
+`permalink_normalizations` is the exception — it already exists, and the
+`Permalinks` step already writes it. The actual `permalink` rows (a `url` and a
+`post_id`) are written from `posts.rb`, so the `permalinks` table is still
+needed.
 
-1. Remove `:permalinks` (and the poll tables, if ignored) from `ignored.rb`.
+So before the post/poll/permalink steps can run, the IntermediateDB schema has
+to gain those tables and regenerate its models:
+
+1. `disco schema unignore permalinks` (remove `:permalinks` from `ignored.rb`);
+   the poll tables are simply unconfigured, not ignored.
 2. Author `tables/posts.rb`, `tables/permalinks.rb`, `tables/polls.rb`,
    `tables/poll_options.rb`, `tables/poll_votes.rb` with the schema DSL (see
    `migrations/docs/schema-configuration.md`; `disco schema add TABLE`
@@ -125,6 +131,116 @@ schema has to gain those tables and regenerate its models:
 4. `disco check` to confirm config and database are in sync.
 
 This is framework work that gates the converter, and it sequences first.
+[PR #35125](https://github.com/discourse/discourse/pull/35125) — "Add support
+for converting and importing `posts`" — is the unfinished reference for the
+posts table and its importer copy step; it was closed pending the importer-side
+performance work (computing per-topic `post_number` without a giant `IN` query),
+not the schema shape.
+
+### Minimal table plan
+
+The IntermediateDB mirrors Discourse's real schema; a table config keeps a subset
+of the live columns, `ignore`s the rest, and `add_column`s the few synthetic ones
+a converter needs. The global conventions already rename `id` → `original_id`
+(`:numeric`, the primary key), make `created_at` optional, and drop `updated_at`,
+so those don't recur below. "Minimal" here means *exactly the columns the phpBB
+steps write* — everything Discourse computes (`post_number`, `cooked`, poll
+option `digest`/`html`) is filled by the importer, not carried through the
+intermediate format.
+
+**`posts`** — written by `posts.rb` and `messages.rb`.
+
+| Step field        | Intermediate column        | Origin                                   |
+|-------------------|----------------------------|------------------------------------------|
+| `id`              | `original_id`              | real (convention)                        |
+| `topic_id`        | `topic_id`                 | real                                     |
+| `user_id`         | `user_id`                  | real                                     |
+| `created_at`      | `created_at`               | real (optional)                          |
+| `raw`             | `raw`                      | real                                     |
+| `original_raw`    | `original_text`            | **add_column** `:text` (re-convert / similarity gating) |
+| `placeholders`    | `placeholders`             | **add_column** `:json` (deferred substitutions: polls, quotes) |
+| `uploads`         | —                          | not a posts column — emitted via the existing `uploads` + upload-reference path |
+
+```ruby
+Migrations::Tooling::Schema.table :posts do
+  add_column :original_text, :text
+  add_column :placeholders, :json
+
+  index :topic_id
+
+  # Keeps: original_id, topic_id, user_id, created_at, raw.
+  ignore :post_number, :reply_to_post_number, :reply_to_user_id, :reply_count,
+         reason: "Post numbering and reply links are resolved during import"
+  ignore :cooked, :baked_at, :baked_version, :cook_method, :last_version_at,
+         :version, :public_version,
+         reason: "Baked during import"
+  ignore :post_type, :action_code, reason: "Small-action posts not modeled yet"
+  # ...all remaining counter/score/moderation columns are ignored as
+  #    "Calculated columns"; `disco schema diff` lists the full set.
+end
+```
+
+**`permalinks`** — written by `posts.rb` (`url`, `post_id`); generated rows have
+no source `id`, so the natural key is `url`.
+
+```ruby
+Migrations::Tooling::Schema.table :permalinks do
+  primary_key :url
+  ignore :id, reason: "Permalinks are generated, not sourced"
+  column :url, required: true
+
+  # Keeps: url, post_id.
+  ignore :topic_id, :category_id, :external_url, :tag_id, :user_id, :created_at,
+         reason: "phpBB only emits post permalinks"
+end
+```
+
+**`polls`** — written by `polls/polls.rb`. Every field maps to a real column.
+
+```ruby
+Migrations::Tooling::Schema.table :polls do
+  # Keeps: original_id, post_id, title, created_at, close_at, max, anonymous_voters.
+  ignore :name, :type, :status, :results, :visibility, :min, :step,
+         :chart_type, :groups, :dynamic,
+         reason: "Defaulted during import; phpBB has one simple poll type"
+end
+```
+
+**`poll_options`** — written by `polls/poll_options.rb`. Discourse stores
+`digest`/`html`, not a plain label, and has no `position`, so both are synthetic.
+
+```ruby
+Migrations::Tooling::Schema.table :poll_options do
+  add_column :text, :text         # option label
+  add_column :position, :integer
+  column :text, required: true
+
+  # Keeps: original_id, poll_id.
+  ignore :digest, :html, reason: "Computed from text during import"
+  ignore :anonymous_votes, :created_at, reason: "Not sourced"
+end
+```
+
+**`poll_votes`** — written by `polls/poll_votes.rb`. Discourse has no `id` here;
+the source row is `(poll_option_id, user_id)`.
+
+```ruby
+Migrations::Tooling::Schema.table :poll_votes do
+  primary_key :poll_option_id, :user_id
+
+  # Keeps: poll_option_id, user_id, created_at.
+  ignore :poll_id, reason: "Derivable from poll_option_id during import"
+  ignore :rank, reason: "Ranked polls not sourced"
+end
+```
+
+Two of these steps still carry cross-item dedup state in the *current*
+converter — `poll_votes.rb` keeps a `@processed_votes` Set and `messages.rb` its
+`@conversation_map` — so they need the same source-side relocation described in
+[The Messages step](#the-messages-step-cross-item-state-must-move-to-the-source)
+before they can run as pure parallel processors. The importer side (copying these
+intermediate rows into Discourse, computing `post_number`/`cooked`/option
+`digest`) is separate, downstream work and is out of scope for the converter.
 
 ## Layered architecture
 
