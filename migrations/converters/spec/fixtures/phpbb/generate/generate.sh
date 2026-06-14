@@ -25,7 +25,9 @@ MATRIX=(
 
 compose() { PHP_VERSION="${PHP_VERSION:-7.4}" docker compose "$@"; }
 
-mysql_cli() { compose exec -T mariadb mariadb -uphpbb -pphpbb phpbb; }
+# Force TCP (-h127.0.0.1) on the MariaDB client: MARIADB_USER is created as
+# phpbb@'%', which a socket connection (phpbb@'localhost') doesn't match.
+mysql_cli() { compose exec -T mariadb mariadb -h127.0.0.1 -uphpbb -pphpbb phpbb; }
 pg_cli() { compose exec -T postgres psql -q -U phpbb -d phpbb; }
 
 # phpBB's Postgres schema needs the `varchar_ci` domain (+ operators), which
@@ -40,7 +42,7 @@ pg_preamble_sql() {
 wait_for_dbs() {
   echo "waiting for databases..."
   until compose exec -T postgres pg_isready -U phpbb -q; do sleep 1; done
-  until compose exec -T mariadb mariadb-admin ping -uphpbb -pphpbb --silent 2>/dev/null; do sleep 1; done
+  until compose exec -T mariadb mariadb-admin -h127.0.0.1 -uphpbb -pphpbb ping --silent 2>/dev/null; do sleep 1; done
 }
 
 populate_3_0() {
@@ -82,7 +84,7 @@ generate_one() {
     populate_materialized "$tag"
   fi
 
-  compose exec -T mariadb mariadb-dump --no-data --skip-comments --compact -uphpbb -pphpbb phpbb \
+  compose exec -T mariadb mariadb-dump -h127.0.0.1 --no-data --skip-comments --compact -uphpbb -pphpbb phpbb \
     >"../schemas/${ver}/mysql.sql"
   compose exec -T postgres pg_dump --schema-only --no-owner --no-privileges -U phpbb phpbb \
     >"../schemas/${ver}/postgres.sql"
