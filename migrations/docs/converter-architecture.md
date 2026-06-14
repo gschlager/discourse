@@ -8,16 +8,35 @@ the two things they got structurally wrong (dialect entangled with the version
 class chain; driver quirks leaking into steps), while raising the abstraction so
 the same template covers a vBulletin 5 rewrite or a NodeBB-on-MongoDB source.
 
-> **Status.** This is a design, not a description of code that exists. Three of
-> its load-bearing pieces are *not built yet* and are called out inline as
-> prerequisites: IntermediateDB models for posts/permalinks/polls (see
-> [Prerequisites](#prerequisites-what-must-exist-first)), the `Markbridge`
-> content engine (see [Content layer](#content-layer)), and the source-side
-> rework of the stateful `Messages` step (see
-> [The Messages step](#the-messages-step-cross-item-state-must-move-to-the-source)).
-> The step DSL below matches the realized `source`/`processor` split from
-> #40816 — the prior prose used the older `process_item(item, stats)` API and
-> has been corrected here.
+> **Status.** This is a design, not a description of code that exists — but it is
+> no longer free-floating. This branch is **stacked on
+> [#204](https://github.com/gschlager/discourse/pull/204) →
+> [#205](https://github.com/gschlager/discourse/pull/205) →
+> [#206](https://github.com/gschlager/discourse/pull/206)**, which build the two
+> pieces the design leans on hardest, so they are now real APIs to consume rather
+> than prerequisites to invent:
+>
+> - **The content engine** — `Migrations::Converters::Content` (#205) wraps the
+>   `markbridge` gem (BBCode / HTML / MediaWiki / TextFormatter XML → Markdown).
+>   This is the "Markbridge" the [Content layer](#content-layer) refers to; the
+>   facade is `Content.new(format:).to_markdown(body, on_embed:)`, not a bag of
+>   static methods.
+> - **Deferred embeds / placeholders** — `Migrations::Placeholder` +
+>   `Migrations::Converters::EmbedBuffer` + six synthetic linkage tables
+>   (`post_uploads`, `post_quotes`, `post_mentions`, `post_polls`, `post_events`,
+>   `post_links`) + the importer's `PlaceholderResolver` (#204). This replaces the
+>   ad-hoc poll-placeholder string and the JSON `placeholders` column the earlier
+>   draft invented.
+> - **The `posts` table** — #206 adds it to the IntermediateDB schema (adapting
+>   the closed `discourse/discourse#35125`) along with the Discourse Posts step
+>   that exercises all of the above; the phpBB Posts step is modeled on it.
+>
+> What's still genuinely ahead: the phpBB-specific source/steps/content, the
+> source-side rework of the stateful `Messages` step (see
+> [The Messages step](#the-messages-step-cross-item-state-must-move-to-the-source)),
+> and the phpBB entity tables not covered by #206 —
+> [`permalinks` and the poll tables](#minimal-table-plan). The step DSL below
+> matches the realized `source`/`processor` split from #40816.
 
 ## The one idea everything hangs on
 
@@ -89,53 +108,57 @@ references point at the code that exhibits the problem.
    above it.** Column/join-level drift → capability object or compatibility
    views inside one Source. Topology-level drift → a separate Source
    implementation behind the same interface.
-6. **Content format is sniffed per row** (`<r>`/`<t>` ⇒ XML, else legacy), not
-   inferred from version. The legacy importer decides XML-vs-BBCode from the
-   version string, which misfires on content authored before an in-place
-   upgrade; per-row sniffing is robust to mixed content. Markbridge is the single
-   conversion engine; the converter owns only a source-specific legacy
-   pre-clean.
+6. **Content format is sniffed per row** (`<r>`/`<t>` ⇒ TextFormatter XML, else
+   legacy BBCode), not inferred from version. The legacy importer decides
+   XML-vs-BBCode from the version string, which misfires on content authored
+   before an in-place upgrade; per-row sniffing is robust to mixed content. The
+   sniff only *selects the format*; the conversion itself goes through the shared
+   `Migrations::Converters::Content` (Markbridge), so the converter owns only a
+   thin source-specific legacy pre-clean.
 7. **No backward compatibility.** The existing phpBB converter is replaced
    wholesale; there is one consumer and it migrates immediately.
 
 ## Prerequisites: what must exist first
 
-The step sketches below write to `IntermediateDB::Post`, `IntermediateDB::Permalink`,
-and `IntermediateDB::Poll`/`PollOption`/`PollVote`. **None of these models exist
-today.** The current converter writes posts and permalinks through an older
-output API (`output_db.insert_post` / `Models.post` / `insert_permalink`), and in
-the IntermediateDB schema those tables are *not modeled*:
+The phpBB Posts step writes to `IntermediateDB::Post` and the six `post_*` embed
+linkage tables; the poll and permalink steps write
+`IntermediateDB::Poll`/`PollOption`/`PollVote` and `IntermediateDB::Permalink`.
+After stacking on #204–#206, the post side already exists:
 
-- `permalinks` is listed in
+- **`posts`** — added by #206 (`tables/posts.rb`, with `original_raw`,
+  `reply_to_post_number → reply_to_post_id`, optional `post_number`,
+  `post_type`/`hidden_reason_id` enums). The phpBB step writes the same model.
+- **`post_uploads` / `post_quotes` / `post_mentions` / `post_polls` /
+  `post_events` / `post_links`** — added by #204, uniform
+  `(post_id, placeholder, …)` shape. The phpBB Posts step drains an `EmbedBuffer`
+  into these exactly as the Discourse step does.
+
+What's **still missing** for phpBB — the entity tables #206 didn't need (the
+Discourse converter has no separate poll/permalink steps; it uses
+`permalink_normalizations`, which already exists, and renders polls natively):
+
+- `permalinks` — `permalink` rows (`url`, `post_id`) are written from the phpBB
+  Posts step. `permalinks` is currently in
   `migrations/tooling/config/schema/intermediate_db/ignored.rb`.
-- there is no `tables/posts.rb`, `tables/polls.rb`, `tables/poll_options.rb`, or
-  `tables/poll_votes.rb` under
-  `migrations/tooling/config/schema/intermediate_db/tables/` — only `topics.rb`.
+- `polls`, `poll_options`, `poll_votes` — phpBB sources polls as separate
+  entities, so each needs a table; none is configured yet.
 
-`permalink_normalizations` is the exception — it already exists, and the
-`Permalinks` step already writes it. The actual `permalink` rows (a `url` and a
-`post_id`) are written from `posts.rb`, so the `permalinks` table is still
-needed.
+So the remaining schema work, before the poll/permalink steps run:
 
-So before the post/poll/permalink steps can run, the IntermediateDB schema has
-to gain those tables and regenerate its models:
-
-1. `disco schema unignore permalinks` (remove `:permalinks` from `ignored.rb`);
-   the poll tables are simply unconfigured, not ignored.
-2. Author `tables/posts.rb`, `tables/permalinks.rb`, `tables/polls.rb`,
-   `tables/poll_options.rb`, `tables/poll_votes.rb` with the schema DSL (see
+1. `disco schema unignore permalinks` (remove `:permalinks` from `ignored.rb`).
+2. Author `tables/permalinks.rb`, `tables/polls.rb`, `tables/poll_options.rb`,
+   `tables/poll_votes.rb` with the schema DSL (see
    `migrations/docs/schema-configuration.md`; `disco schema add TABLE`
    scaffolds one).
 3. `disco schema generate` to emit the SQL schema and the
-   `Migrations::Database::IntermediateDB::{Post,Permalink,Poll,...}` models.
+   `Migrations::Database::IntermediateDB::{Permalink,Poll,PollOption,PollVote}`
+   models.
 4. `disco check` to confirm config and database are in sync.
 
-This is framework work that gates the converter, and it sequences first.
-[PR #35125](https://github.com/discourse/discourse/pull/35125) — "Add support
-for converting and importing `posts`" — is the unfinished reference for the
-posts table and its importer copy step; it was closed pending the importer-side
-performance work (computing per-topic `post_number` without a giant `IN` query),
-not the schema shape.
+The poll *embed* (a `post_polls` linkage row pointing at a `polls.original_id`)
+needs no new table — `post_polls` is already in the stack; the phpBB Posts step
+just mints a poll placeholder via `EmbedBuffer#poll(poll_id:)` for a post whose
+topic carries a poll.
 
 ### Minimal table plan
 
@@ -148,39 +171,20 @@ steps write* — everything Discourse computes (`post_number`, `cooked`, poll
 option `digest`/`html`) is filled by the importer, not carried through the
 intermediate format.
 
-**`posts`** — written by `posts.rb` and `messages.rb`.
+**`posts`** — already provided by #206 (`tables/posts.rb`); the phpBB step reuses
+it unchanged. Worth noting how its shape maps onto what the phpBB step produces:
+`original_raw` keeps the untouched source body next to the placeholder-substituted
+`raw`; there is **no** `placeholders` JSON column — deferred embeds live in the
+`post_*` linkage tables instead; attachments become `IntermediateDB::Upload` rows
+plus `post_uploads` linkage, not a posts column; the poll placeholder is a
+`post_polls` row, not an appended string. `post_number` is optional (recomputed at
+import) and `reply_to_post_number` is resolved to `reply_to_post_id` via a
+self-join. [PR #35125](https://github.com/discourse/discourse/pull/35125) is the
+prior art #206 adapted; it was closed pending importer-side performance work
+(per-topic `post_number` without a giant `IN`), not the schema shape.
 
-| Step field        | Intermediate column        | Origin                                   |
-|-------------------|----------------------------|------------------------------------------|
-| `id`              | `original_id`              | real (convention)                        |
-| `topic_id`        | `topic_id`                 | real                                     |
-| `user_id`         | `user_id`                  | real                                     |
-| `created_at`      | `created_at`               | real (optional)                          |
-| `raw`             | `raw`                      | real                                     |
-| `original_raw`    | `original_text`            | **add_column** `:text` (re-convert / similarity gating) |
-| `placeholders`    | `placeholders`             | **add_column** `:json` (deferred substitutions: polls, quotes) |
-| `uploads`         | —                          | not a posts column — emitted via the existing `uploads` + upload-reference path |
-
-```ruby
-Migrations::Tooling::Schema.table :posts do
-  add_column :original_text, :text
-  add_column :placeholders, :json
-
-  index :topic_id
-
-  # Keeps: original_id, topic_id, user_id, created_at, raw.
-  ignore :post_number, :reply_to_post_number, :reply_to_user_id, :reply_count,
-         reason: "Post numbering and reply links are resolved during import"
-  ignore :cooked, :baked_at, :baked_version, :cook_method, :last_version_at,
-         :version, :public_version,
-         reason: "Baked during import"
-  ignore :post_type, :action_code, reason: "Small-action posts not modeled yet"
-  # ...all remaining counter/score/moderation columns are ignored as
-  #    "Calculated columns"; `disco schema diff` lists the full set.
-end
-```
-
-**`permalinks`** — written by `posts.rb` (`url`, `post_id`); generated rows have
+**`permalinks`** — written by the phpBB Posts step (`url`, `post_id`); generated
+rows have
 no source `id`, so the natural key is `url`.
 
 ```ruby
@@ -296,19 +300,33 @@ Load-bearing properties:
 
 ## Directory layout
 
-Framework:
+Framework — content and placeholder primitives already exist (the stack); the
+Source toolkit is the part still to build:
 
 ```
-migrations-converters/lib/migrations/converter/
-├── source.rb                  # Source interface / row-contract (storage-agnostic)
-└── source/
-    └── sql/                   # toolkit for the SQL Source family (opt-in)
-        ├── connection.rb      # streaming enumeration + type-normalization contract
-        ├── mysql.rb           # mysql2 adapter
-        ├── postgres.rb        # pg adapter
-        ├── dialect.rb         # named SQL fragments, one instance per backend
-        └── introspector.rb    # column/table existence probes (capabilities, views)
+migrations/core/lib/migrations/
+└── placeholder.rb             # token grammar (U+E000 + per-run nonce)   [#204]
+
+migrations/converters/lib/migrations/converters/
+├── content.rb                 # Markbridge wrapper, shared embed registry  [#205]
+├── embed_buffer.rb            # per-post embed sink → tokens + descriptors  [#204]
+└── converter/                 # ← Source toolkit to build
+    ├── source.rb              # Source interface / row-contract (storage-agnostic)
+    └── source/
+        └── sql/               # toolkit for the SQL Source family (opt-in)
+            ├── connection.rb  # streaming enumeration + type-normalization contract
+            ├── mysql.rb       # mysql2 adapter
+            ├── postgres.rb    # pg adapter
+            ├── dialect.rb     # named SQL fragments, one instance per backend
+            └── introspector.rb # column/table existence probes (capabilities, views)
+
+migrations/importer/lib/migrations/importer/
+└── placeholder_resolver.rb    # rewrites tokens once id maps exist          [#204]
 ```
+
+The six `post_*` linkage tables and the `posts` table live in the IntermediateDB
+schema (`migrations/tooling/config/schema/intermediate_db/tables/`), added by #204
+and #206.
 
 phpBB converter (SQL family, below the topology threshold ⇒ one Source):
 
@@ -510,35 +528,46 @@ neither `posts.rb` nor `messages.rb` needs its `is_a?(String)` guard anymore.
 
 ## Content layer
 
-Markbridge is the single engine; the converter owns routing and a source-specific
-legacy pre-clean.
+The engine is the shared `Migrations::Converters::Content` (#205), which wraps the
+`markbridge` gem. It is *not* a bag of static methods — it is constructed per
+format and converts with an optional embed sink:
 
-> **Dependency.** `Markbridge` does not exist yet. Today the converter carries a
-> forked BBCode/XML parser (`lib/phpbb_parser.rb`, `lib/bbcode/xml_to_markdown.rb`,
-> `lib/bbcode/markdown_node.rb`). The plan is to delete those once Markbridge
-> lands; until then the forked `PhpbbParser` is the interim engine behind the same
-> `Content#to_markdown` facade, so the steps don't change when the engine is
-> swapped.
+```ruby
+# format ∈ {:bbcode, :html, :mediawiki, :text_formatter_xml}
+raw = Content.new(format: :bbcode).to_markdown(source, on_embed: buffer)
+```
+
+When an `on_embed` sink (an `EmbedBuffer`) is passed, the deferred embed kinds
+(`upload`, `quote`, `mention` by default; `link` opt-in) are recorded on the sink
+and replaced in the output by `Migrations::Placeholder` tokens; everything else
+renders natively. The Markbridge embed-handler registry that maps AST nodes to
+sink calls is implemented **once** in `Content` and shared by every converter, so
+the phpBB converter writes no placeholder-rendering code.
+
+phpBB owns only two things on top of that: **format selection** and a **thin
+legacy pre-clean**.
 
 ```ruby
 module Phpbb
   class Content
-    def initialize(smilies:, attachment_resolver:, site_url:)
+    def initialize(smilies:, attachment_resolver:)
       @cleaner = LegacyCleaner.new(smilies:, attachment_resolver:)
-      @site_url = site_url
+      @xml = Migrations::Converters::Content.new(format: :text_formatter_xml)
+      @bbcode = Migrations::Converters::Content.new(format: :bbcode)
     end
 
-    def to_markdown(post_text, bbcode_uid:, uploads: nil)
+    def to_markdown(post_text, bbcode_uid:, on_embed:)
       if xml?(post_text)
-        Markbridge.textformatter_xml_to_markdown(post_text)
+        @xml.to_markdown(post_text, on_embed:)
       else
-        Markbridge.bbcode_to_markdown(@cleaner.call(post_text, bbcode_uid:, uploads:))
+        @bbcode.to_markdown(@cleaner.call(post_text, bbcode_uid:), on_embed:)
       end
     end
 
     private
 
-    # s9e stores the parsed representation rooted at <r> (rich) or <t> (plain).
+    # s9e (TextFormatter) stores the parsed representation rooted at <r> (rich) or
+    # <t> (plain); anything else is legacy BBCode.
     def xml?(text) = text.start_with?("<r>", "<t>", "<r ", "<t ")
   end
 end
@@ -546,12 +575,22 @@ end
 
 `LegacyCleaner` ports the importer's `text_processor.rb` / `smiley_processor.rb`
 regexes — uid strip (`/:(?:\w{5,8})\]/`), `<!-- s … -->` smilies, `<!-- m -->` /
-`<!-- l -->` links, `[list]…[/list:u]` / `[*]…[/*:m]`, `[attachment=N]…` — but
-**only the subset Markbridge's BBCode parser does not already cover**. The
-importer's regex set is the conformance corpus: each pattern is a spec test fed
-through Markbridge; whatever passes is deleted from the cleaner. Smilies and
-attachment filenames are injected as plain lookups (built once in worker `setup`),
-never DB calls — keeping the Processor pure.
+`<!-- l -->` links, `[list]…[/list:u]` / `[*]…[/*:m]` — but **only the subset
+Markbridge's BBCode parser does not already cover**. The importer's regex set is
+the conformance corpus: each pattern is a spec test fed through
+`Content.new(format: :bbcode)`; whatever passes is deleted from the cleaner.
+Smilies are injected as plain lookups (built once in worker `setup`), never DB
+calls — keeping the Processor pure.
+
+Attachments are the one phpBB wrinkle the shared registry doesn't cover. Markbridge
+mints upload placeholders from `Markbridge::AST::Upload` nodes (carrying a sha1),
+but phpBB attachments arrive as `[attachment=N]…` markup plus the `uploads` JSON
+joined onto the post row — there is no upload node in the AST. So the phpBB Posts
+step resolves attachments itself: create an `IntermediateDB::Upload` per file, mint
+a token with `buffer.upload(upload_id: …)`, and rewrite the `[attachment=N]`
+markup to that token in the pre-clean. Same destination as the Discourse path
+(`post_uploads` linkage rows + tokens in `raw`), reached through a phpBB-specific
+extractor rather than the AST handler.
 
 ## Step layer
 
@@ -589,29 +628,41 @@ module Phpbb
           Phpbb::Content.new(
             smilies: phpbb_config[:smilies],
             attachment_resolver: AttachmentResolver.new(phpbb_config[:attachment_path]),
-            site_url: settings[:site_url],
           )
       end
 
       def process(item)
-        uploads = build_uploads(item[:uploads], item[:poster_id])   # already parsed Ruby
-        raw = @content.to_markdown(item[:post_text], bbcode_uid: item[:bbcode_uid], uploads:)
-        raw = append_poll_placeholder(raw, item) if item[:has_poll]  # already boolean
+        embeds = EmbedBuffer.new   # per-post embed sink → tokens + typed descriptors
+        raw = @content.to_markdown(item[:post_text], bbcode_uid: item[:bbcode_uid], on_embed: embeds)
+        embeds.poll(poll_id: item[:topic_id]) if item[:has_poll]   # mints + records; token spliced below
+        raw << embeds.placeholders.last if item[:has_poll]
 
         IntermediateDB::Post.create(
           original_id: item[:post_id],
           topic_id:    item[:topic_id],
           created_at:  Time.at(item[:post_time]),
           raw:         raw,
+          original_raw: item[:post_text],
           user_id:     author_id(item),
           # ... every IntermediateDB Post column acknowledged; unavailable ⇒ column: nil
         )
+        write_embeds(item[:post_id], embeds)   # drain buffer → post_* linkage tables
+
         IntermediateDB::Permalink.create(
           url: "#{settings[:url_prefix]}viewtopic.php?p=#{item[:post_id]}",
           post_id: item[:post_id],
         )
       rescue SomeExpectedError => e
         tracker.log_warning("Could not convert post #{item[:post_id]}", exception: e)
+      end
+
+      # Uniform across converters: each typed collection splats into its linkage
+      # table (see the Discourse Posts step in #206 for the full version).
+      def write_embeds(post_id, embeds)
+        embeds.uploads.each { |u| IntermediateDB::PostUpload.create(post_id:, **u) }
+        embeds.polls.each   { |p| IntermediateDB::PostPoll.create(post_id:, **p) }
+        embeds.quotes.each  { |q| IntermediateDB::PostQuote.create(post_id:, **q) }
+        embeds.mentions.each { |m| IntermediateDB::PostMention.create(post_id:, **m) }
       end
     end
 
@@ -692,8 +743,14 @@ Mapped onto the established converter-testing pattern:
    *source* DDL, no data, across the grid `{3.0, 3.1, 3.3} × {mysql, postgres}`.
    The cheap test that would have caught "Postgres only wired for 3.0." Non-SQL
    sources lint their retrieval against fixtures instead.
-4. **Content conformance** — the importer-regex corpus through `Content`, plus
-   Bridgekeeper similarity gating on `raw` → cooked output.
+4. **Content conformance** — the importer-regex corpus through
+   `Content.new(format: :bbcode)` / `:text_formatter_xml`, plus Bridgekeeper
+   similarity gating on `raw` → cooked output.
+5. **Placeholder contract** — for posts with deferred embeds, assert every token
+   in `raw` has a matching linkage row and vice versa (the byte-identical
+   invariant `Migrations::Placeholder` guarantees). `EmbedBuffer#placeholders`
+   gives the expected set; this is the cheap test that catches a token spliced
+   without its row, or a row whose token never reached `raw`.
 
 ## Open questions
 
