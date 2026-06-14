@@ -14,7 +14,11 @@ Gem::Specification.new do |s|
   s.add_dependency "colored2"
   s.add_dependency "i18n"
   s.add_dependency "markbridge"
-  s.add_dependency "mysql2"
   s.add_dependency "pg"
   s.add_dependency "zeitwerk"
+
+  # `mysql2` is an optional dependency, needed only by converters whose source is
+  # MySQL/MariaDB (e.g. phpBB). It is loaded lazily by `Adapter::Mysql` so the gem
+  # installs without MySQL client libraries; install it explicitly to use such a
+  # converter.
 end
