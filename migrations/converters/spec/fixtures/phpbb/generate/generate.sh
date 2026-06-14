@@ -32,13 +32,12 @@ pg_cli() { compose exec -T postgres psql -q -U phpbb -d phpbb; }
 
 # phpBB's Postgres schema needs the `varchar_ci` domain (+ operators), which
 # `db_tools` assumes exists; it's defined in 3.0's committed postgres_schema.sql
-# preamble. Emit just that preamble (no tables) for the materialized versions.
-# Download fully before `awk` — `awk … {exit}` would close the pipe early and,
-# under `pipefail`, fail curl with a broken-pipe error.
+# preamble. Emit just that preamble (everything before the first CREATE TABLE,
+# minus the sequences). The awk reads the whole input rather than `exit`ing early,
+# so it can't close the pipe mid-write and trip SIGPIPE under `pipefail`.
 pg_preamble_sql() {
-  local schema
-  schema="$(curl -fsSL "${RAW}/release-3.0.14/phpBB/install/schemas/postgres_schema.sql")"
-  printf '%s\n' "$schema" | awk '/CREATE TABLE/{exit} !/CREATE SEQUENCE/{print}'
+  curl -fsSL "${RAW}/release-3.0.14/phpBB/install/schemas/postgres_schema.sql" \
+    | awk '/CREATE TABLE/{stop = 1} !stop && !/CREATE SEQUENCE/{print}'
   echo "COMMIT;"
 }
 
