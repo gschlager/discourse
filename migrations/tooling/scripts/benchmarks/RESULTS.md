@@ -12,6 +12,41 @@ Compares the INSERT speed of SQLite and DuckDB
 | Extralite | 45.396666 |    4.457247 |  49.853913 |  50.065680 |
 | DuckDB    | 49.012140 |   10.210994 |  59.223134 |  52.095679 |
 
+## multi_row_insert.rb
+
+Compares ways of encoding bulk INSERTs into the IntermediateDB. All variants use
+the same connection pragmas and transaction batching (1000 rows) as
+`Migrations::Database::Connection`; only the statement encoding differs. Ran with
+`ruby 3.3.6` and `extralite-bundle 2.14` (SQLite 3.51.2), 4,000,000 rows.
+
+```
+per_row (status quo)            4.8196 s         829,943 rows/s   (baseline)
+batch_execute                   3.3347 s       1,199,521 rows/s   1.45x faster
+multi_row(5)                    2.2204 s       1,801,507 rows/s   2.17x faster
+multi_row(10)                   1.7659 s       2,265,196 rows/s   2.73x faster
+multi_row(25)                   1.4990 s       2,668,453 rows/s   3.22x faster
+multi_row(50)                   1.8542 s       2,157,257 rows/s   2.60x faster
+multi_row(100)                  2.2147 s       1,806,143 rows/s   2.18x faster
+multi_row(500)                  2.4382 s       1,640,582 rows/s   1.98x faster
+multi_row(8191)                 2.4938 s       1,603,950 rows/s   1.93x faster
+multi_row_batch(25)             1.5137 s       2,642,516 rows/s   3.19x faster
+multi_row_batch(100)            2.4163 s       1,655,451 rows/s   1.99x faster
+```
+
+Takeaways:
+
+- Multi-row `VALUES` is a clear win: **~3.2x** over the per-row prepared statement
+  at the sweet spot of **~25 rows per statement**.
+- The sweet spot is small. Throughput peaks around 10–50 rows/statement and then
+  declines — large batches pay more for binding/copying parameters and building
+  bigger statements than they save on SQLite steps, and they erode the prepared
+  statement cache's effectiveness. Filling the 8191-row parameter limit is one of
+  the *worst* options.
+- Extralite's native `batch_execute` (re-binding the single-row statement N times
+  in C) helps on its own (~1.45x) but is dominated by multi-row `VALUES`. Layering
+  `batch_execute` on top of multi-row `VALUES` adds nothing measurable over a plain
+  Ruby loop at the same rows-per-statement.
+
 ## hash_vs_data.rb
 
 Compares the INSERT speed when the data is bound as Hash or Data class
